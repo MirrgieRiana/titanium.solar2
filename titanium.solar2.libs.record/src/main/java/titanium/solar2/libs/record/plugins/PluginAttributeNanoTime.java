@@ -24,11 +24,11 @@ public class PluginAttributeNanoTime implements IPlugin
 			samples += e.chunk.length;
 
 			double secondsFromStart = (nowNanoTime - startNanoTime) * 1e-9;
-			e.attributesBuilder.add("SecondsFromStart", String.format("%.2f", secondsFromStart));
-			e.attributesBuilder.add("SecondsFromLast", String.format("%.2f", (nowNanoTime - lastNanoTime) * 1e-9));
+			e.attributesBuilder.add("SecondsFromStart", "%.2f", secondsFromStart);
+			e.attributesBuilder.add("SecondsFromLast", "%.2f", (nowNanoTime - lastNanoTime) * 1e-9);
 
 			double secondsSamples = (double) samples / recorder.samplesPerSecond;
-			e.attributesBuilder.add("SampleLost", String.format("%.2f%%", (1 - secondsSamples / secondsFromStart) * 100));
+			e.attributesBuilder.add("SampleLost", "%.2f%%", (1 - secondsSamples / secondsFromStart) * 100);
 
 			lastNanoTime = nowNanoTime;
 		});
