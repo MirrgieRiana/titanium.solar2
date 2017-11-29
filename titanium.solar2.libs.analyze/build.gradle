@@ -1,0 +1,78 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'maven'
+
+project.group = 'mirrg'
+project.archivesBaseName = 'titanium.solar2.libs.analyze'
+version = '1.0.0'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+tasks.withType(AbstractCompile)*.options*.encoding = 'UTF-8'
+tasks.withType(GroovyCompile)*.groovyOptions*.encoding = 'UTF-8'
+
+jar {
+	manifest {
+		attributes 'Implementation-Title': 'Gradle Quickstart'
+		attributes 'Implementation-Version': version
+	}
+}
+
+task sourcesJar(type: Jar, dependsOn:classes) {
+	classifier = 'sources'
+	from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn:javadoc) {
+	classifier = 'javadoc'
+	from javadoc.destinationDir
+}
+
+javadoc {
+	options.charSet = 'UTF-8'
+	options.encoding = 'UTF-8'
+}
+
+artifacts {
+	archives sourcesJar
+	archives javadocJar
+}
+
+repositories {
+
+	mavenCentral()
+
+	maven {
+		url '../maven'
+	}
+
+	maven {
+		url 'https://raw.githubusercontent.com/MirrgieRiana/mirrg.lithium/master/maven'
+	}
+
+}
+
+dependencies {
+	testCompile group: 'junit', name: 'junit', version: '4.+'
+
+	compile group: 'mirrg.lithium', name: 'mirrg.lithium.struct', version: '2.2+'
+	compile group: 'mirrg.lithium', name: 'mirrg.lithium.event', version: '2.1+'
+
+	compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6+'
+	compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.7+'
+}
+
+uploadArchives {
+	repositories {
+
+		mavenDeployer {
+			pom.artifactId = project.archivesBaseName
+			repository(url: 'file://localhost/' + file('../maven').getAbsolutePath())
+		}
+
+	}
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.0'
+}
