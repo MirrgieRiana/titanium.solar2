@@ -13,8 +13,7 @@ public class MainPrintTimeSlippingPackets
 
 	public static void main(String[] args) throws Exception
 	{
-		File dir = new File("H:\\amyf\\jesqenvina\\xa1\\kenkyuu\\recorder");
-		File src = new File(dir, "5_extract\\data_sorted.csv");
+		File src = new File(BaseDir.baseDir, "5_extract\\data_sorted.csv");
 
 		new PacketsIterator(src, TimeRendererSimple.INSTANCE).iterate(new IPacketListener() {
 

@@ -15,9 +15,8 @@ public class Main_data_sorted
 
 	public static void main(String[] args) throws Exception
 	{
-		File dir = new File("H:\\amyf\\jesqenvina\\xa1\\kenkyuu\\recorder");
-		File src = new File(dir, "5_extract\\data.csv");
-		File dst = new File(dir, "5_extract\\data_sorted.csv");
+		File src = new File(BaseDir.baseDir, "5_extract\\data.csv");
+		File dst = new File(BaseDir.baseDir, "5_extract\\data_sorted.csv");
 
 		try (PrintStream out = new PrintStream(new FileOutputStream(dst))) {
 			new PacketsIterator(src, TimeRendererSimple.INSTANCE).iterate(new IPacketListener() {

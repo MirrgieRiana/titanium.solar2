@@ -22,11 +22,10 @@ public class Main_data_sorted_statN
 
 	public static void main(String[] args) throws Exception
 	{
-		File dir = new File("H:\\amyf\\jesqenvina\\xa0\\kenkyuu\\data\\recorder_kisarazu_20170530");
-		File src = new File(dir, "5_extract\\data_sorted.csv");
-		File dst1 = new File(dir, "5_extract\\data_sorted_stat1.csv");
-		File dst2 = new File(dir, "5_extract\\data_sorted_stat2.csv");
-		File dst3 = new File(dir, "5_extract\\data_sorted_stat3.csv");
+		File src = new File(BaseDir.baseDir, "5_extract\\data_sorted.csv");
+		File dst1 = new File(BaseDir.baseDir, "5_extract\\data_sorted_stat1.csv");
+		File dst2 = new File(BaseDir.baseDir, "5_extract\\data_sorted_stat2.csv");
+		File dst3 = new File(BaseDir.baseDir, "5_extract\\data_sorted_stat3.csv");
 
 		try (PrintStream out1 = new PrintStream(new FileOutputStream(dst1));
 			PrintStream out2 = new PrintStream(new FileOutputStream(dst2));
