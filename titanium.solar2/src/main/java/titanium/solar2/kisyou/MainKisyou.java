@@ -1,8 +1,10 @@
 package titanium.solar2.kisyou;
 
+import java.io.File;
 import java.time.LocalDateTime;
 
-import titanium.solar2.libs.kisyou.HKisyou;
+import titanium.solar2.BaseDir;
+import titanium.solar2.libs.kisyou.CachedKisyouTable;
 import titanium.solar2.libs.kisyou.Key;
 import titanium.solar2.libs.time.ITimeRenderer;
 import titanium.solar2.libs.time.timerenderers.TimeRendererSimple;
@@ -12,6 +14,7 @@ public class MainKisyou
 
 	public static void main(String[] args) throws Exception
 	{
+		CachedKisyouTable cachedKisyouTable = new CachedKisyouTable(new File(BaseDir.baseDir, "kisyou_cache"));
 		String precNo = "45";
 		String blockNo = "0382";
 		LocalDateTime from = LocalDateTime.of(2017, 5, 30, 0, 0, 0);
@@ -19,7 +22,7 @@ public class MainKisyou
 		ITimeRenderer timeRenderer = TimeRendererSimple.INSTANCE;
 
 		for (LocalDateTime time = from; time.compareTo(to) < 0; time = time.plusDays(1)) {
-			HKisyou.getKisyouEntries(precNo, blockNo, new Key(time)).stream()
+			cachedKisyouTable.getKisyouEntries(precNo, blockNo, new Key(time)).stream()
 				.map(te -> {
 					return String.format("%s,%5s,%5s,%2s",
 						timeRenderer.format(te.time),
