@@ -20,7 +20,7 @@ import titanium.solar2.libs.record.core.IPlugin;
 import titanium.solar2.libs.record.core.RecoderEvent;
 import titanium.solar2.libs.record.renderer.ChunkRendererImageGraph;
 import titanium.solar2.libs.record.renderer.ChunkRendererStringGraph;
-import titanium.solar2.libs.record.renderer.TimeRenderer;
+import titanium.solar2.libs.time.ITimeRenderer;
 
 public class PluginSaveArchive implements IPlugin
 {
@@ -32,6 +32,7 @@ public class PluginSaveArchive implements IPlugin
 	public final int imageHeight;
 	public final int stringGraphLength;
 	public final double stringGraphZoom;
+	public final ITimeRenderer timeRenderer;
 
 	private BufferedImage image;
 	private DateTimeFormatter formatterDir;
@@ -48,7 +49,8 @@ public class PluginSaveArchive implements IPlugin
 		int imageWidth,
 		int imageHeight,
 		int stringGraphLength,
-		double stringGraphZoom)
+		double stringGraphZoom,
+		ITimeRenderer timeRenderer)
 	{
 		this.dir = dir;
 		this.patternDir = patternDir;
@@ -57,6 +59,7 @@ public class PluginSaveArchive implements IPlugin
 		this.imageHeight = imageHeight;
 		this.stringGraphLength = stringGraphLength;
 		this.stringGraphZoom = stringGraphZoom;
+		this.timeRenderer = timeRenderer;
 	}
 
 	@Override
@@ -76,7 +79,7 @@ public class PluginSaveArchive implements IPlugin
 
 			// write entry
 			{
-				String entryNameBase = String.format("%05d-%s", indexInZip, e.chunk.time.format(TimeRenderer.FORMATTER));
+				String entryNameBase = String.format("%05d-%s", indexInZip, timeRenderer.format(e.chunk.time));
 
 				saveData(e.chunk, entryNameBase + ".dat");
 				saveImage(e.chunk, entryNameBase + ".png");
@@ -159,7 +162,7 @@ public class PluginSaveArchive implements IPlugin
 		if (zipOutputStream == null) return;
 
 		zipOutputStream.putNextEntry(new ZipEntry(entryNameBase));
-		ChunkRendererImageGraph.paint(entry, image, 1);
+		ChunkRendererImageGraph.paint(entry, image, timeRenderer, 1);
 		ImageIO.write(image, "png", zipOutputStream);
 	}
 

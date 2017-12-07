@@ -7,11 +7,12 @@ import java.awt.image.BufferedImage;
 
 import titanium.solar2.libs.record.core.Chunk;
 import titanium.solar2.libs.record.util.AttributesBuilder;
+import titanium.solar2.libs.time.ITimeRenderer;
 
 public class ChunkRendererImageGraph
 {
 
-	public static void paint(Chunk chunk, BufferedImage image, double zoom)
+	public static void paint(Chunk chunk, BufferedImage image, ITimeRenderer timeRenderer, double zoom)
 	{
 		Graphics2D g = image.createGraphics();
 		g.setBackground(Color.white);
@@ -67,7 +68,7 @@ public class ChunkRendererImageGraph
 		g.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
 		g.drawString(AttributesRenderer.getString(new AttributesBuilder()
 			.add("Length", "" + chunk.length)
-			.add("Time", chunk.time.format(TimeRenderer.FORMATTER))
+			.add("Time", timeRenderer.format(chunk.time))
 			.get()),
 			2, 2 + (g.getFont().getSize() + 2) * 1);
 		g.drawString(AttributesRenderer.getString(chunk.attributes),

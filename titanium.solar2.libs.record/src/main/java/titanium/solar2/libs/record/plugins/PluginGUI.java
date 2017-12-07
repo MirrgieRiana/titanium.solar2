@@ -16,11 +16,14 @@ import titanium.solar2.libs.record.core.Chunk;
 import titanium.solar2.libs.record.core.IPlugin;
 import titanium.solar2.libs.record.core.RecoderEvent;
 import titanium.solar2.libs.record.renderer.ChunkRendererImageGraph;
+import titanium.solar2.libs.time.ITimeRenderer;
 
 public class PluginGUI implements IPlugin
 {
 
 	public final double zoom;
+	public final ITimeRenderer timeRenderer;
+	public final boolean closable;
 
 	private JFrame frame;
 	private Canvas canvas;
@@ -28,9 +31,11 @@ public class PluginGUI implements IPlugin
 	private Buffer buffer = new Buffer(1);
 	private Chunk entry;
 
-	public PluginGUI(double zoom)
+	public PluginGUI(double zoom, ITimeRenderer timeRenderer, boolean closable)
 	{
 		this.zoom = zoom;
+		this.timeRenderer = timeRenderer;
+		this.closable = closable;
 	}
 
 	@Override
@@ -52,7 +57,7 @@ public class PluginGUI implements IPlugin
 					}
 
 					synchronized (PluginGUI.this) {
-						if (entry != null) ChunkRendererImageGraph.paint(entry, image, zoom);
+						if (entry != null) ChunkRendererImageGraph.paint(entry, image, timeRenderer, zoom);
 					}
 
 					g.drawImage(image, 0, 0, null);
@@ -63,7 +68,7 @@ public class PluginGUI implements IPlugin
 			frame.add(canvas);
 
 			frame.pack();
-			frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+			frame.setDefaultCloseOperation(closable ? WindowConstants.EXIT_ON_CLOSE : WindowConstants.DO_NOTHING_ON_CLOSE);
 			frame.setVisible(true);
 		});
 		recorder.event().register(RecoderEvent.ProcessChunk.Consume.class, e -> {
