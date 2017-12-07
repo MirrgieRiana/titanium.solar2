@@ -60,6 +60,7 @@ public class CachedKisyouTable
 			try (InputStream in = HKisyou.getURL(precNo, blockNo, key).openStream()) {
 				pageData = HKisyou.getPageData(in);
 			}
+			cacheFile.getParentFile().mkdirs();
 			try (OutputStream out = new FileOutputStream(cacheFile)) {
 				out.write(pageData);
 			}
