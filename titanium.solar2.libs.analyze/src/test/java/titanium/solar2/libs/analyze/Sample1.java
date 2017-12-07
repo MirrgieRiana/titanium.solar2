@@ -18,6 +18,7 @@ import titanium.solar2.libs.analyze.util.AnalyzerBuilder;
 import titanium.solar2.libs.analyze.util.FilterExtractMountainBuilder;
 import titanium.solar2.libs.analyze.util.MountainListenerChainBuilder;
 import titanium.solar2.libs.analyze.util.WaveformUtils;
+import titanium.solar2.libs.time.timerenderers.TimeRendererSimple;
 
 public class Sample1
 {
@@ -37,7 +38,7 @@ public class Sample1
 					.addChainListener(chain -> System.out.println(String.format("%3d %6x %s",
 						chain.mountains.length(),
 						chain.getFirstMountain().x,
-						ChainRenderer.toString(chain, samplesPerSecond))))
+						ChainRenderer.toString(chain, TimeRendererSimple.INSTANCE, samplesPerSecond))))
 					.get())
 				.get())
 			.get();

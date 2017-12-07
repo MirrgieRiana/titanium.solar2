@@ -6,13 +6,14 @@ import java.util.stream.IntStream;
 import org.apache.commons.lang3.StringUtils;
 
 import titanium.solar2.libs.analyze.mountainlisteners.chain.Chain;
+import titanium.solar2.libs.time.ITimeRenderer;
 
 public class ChainRenderer
 {
 
-	public static String toString(Chain chain, double samplesPerSecond)
+	public static String toString(Chain chain, ITimeRenderer timeRenderer, double samplesPerSecond)
 	{
-		String time = TimeRenderer.format(chain.mountains.get(0).getTime(samplesPerSecond));
+		String time = timeRenderer.format(chain.mountains.get(0).getTime(samplesPerSecond));
 
 		if (chain.binary.startsWith("1111")) {
 			String s = chain.binary.substring(4);
