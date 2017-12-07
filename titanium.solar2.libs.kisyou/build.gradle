@@ -2,7 +2,7 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'maven'
 
-project.group = 'mirrg'
+project.group = 'titanium.solar2'
 project.archivesBaseName = 'titanium.solar2.libs.kisyou'
 version = '1.0.0'
 
