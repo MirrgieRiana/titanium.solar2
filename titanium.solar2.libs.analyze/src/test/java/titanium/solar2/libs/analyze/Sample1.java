@@ -9,14 +9,14 @@ import java.time.LocalDateTime;
 import mirrg.lithium.struct.Struct1;
 import titanium.solar2.libs.analyze.filters.FilterContinuous;
 import titanium.solar2.libs.analyze.filters.FilterCorrelation;
+import titanium.solar2.libs.analyze.filters.FilterFatten;
 import titanium.solar2.libs.analyze.filters.FilterMul;
 import titanium.solar2.libs.analyze.filters.FilterQOM;
-import titanium.solar2.libs.analyze.filters.mountain.FilterExtractMountain;
-import titanium.solar2.libs.analyze.mountainlisteners.chain.MountainListenerChain;
-import titanium.solar2.libs.analyze.renderer.ChainRenderer;
+import titanium.solar2.libs.analyze.packetdetectors.PacketDetectorPulseLink;
+import titanium.solar2.libs.analyze.pulsedetectors.PulseDetectorThresholdHighest;
+import titanium.solar2.libs.analyze.renderer.PacketRenderer;
 import titanium.solar2.libs.analyze.util.AnalyzerBuilder;
-import titanium.solar2.libs.analyze.util.FilterExtractMountainBuilder;
-import titanium.solar2.libs.analyze.util.MountainListenerChainBuilder;
+import titanium.solar2.libs.analyze.util.DetectorBuilder;
 import titanium.solar2.libs.analyze.util.WaveformUtils;
 import titanium.solar2.libs.time.timerenderers.TimeRendererSimple;
 
@@ -29,16 +29,17 @@ public class Sample1
 		int bufferLength = samplesPerSecond;
 
 		Analyzer analyzer = new AnalyzerBuilder()
-			.addFilter(new FilterCorrelation(WaveformUtils.fromCSV(Sample1.class.getResource("waveform.csv")), 5))
-			.addFilter(new FilterContinuous(45, 80))
-			.addFilter(new FilterQOM())
-			.addFilter(new FilterMul(0.02))
-			.addFilter(new FilterExtractMountainBuilder(new FilterExtractMountain(7, 10, 100))
-				.addMountainListener(new MountainListenerChainBuilder(new MountainListenerChain(45, 80, 30, 100, 3))
-					.addChainListener(chain -> System.out.println(String.format("%3d %6x %s",
-						chain.mountains.length(),
-						chain.getFirstMountain().x,
-						ChainRenderer.toString(chain, TimeRendererSimple.INSTANCE, samplesPerSecond))))
+			.addListener(new FilterCorrelation(WaveformUtils.fromCSV(Sample1.class.getResource("waveform.csv")), 5))
+			.addListener(new FilterContinuous(45, 80))
+			.addListener(new FilterQOM())
+			.addListener(new FilterMul(0.02))
+			.addListener(new FilterFatten(7))
+			.addListener(new DetectorBuilder<>(new PulseDetectorThresholdHighest(10, 100))
+				.addListener(new DetectorBuilder<>(new PacketDetectorPulseLink(30, 45, 80, 100, 5, 2, 1))
+					.addListener(packet -> System.out.println(String.format("%3d %6x %s",
+						packet.pulses.length(),
+						packet.getFirstPulse().x,
+						PacketRenderer.toString(packet, TimeRendererSimple.INSTANCE, samplesPerSecond))))
 					.get())
 				.get())
 			.get();
@@ -51,6 +52,8 @@ public class Sample1
 			byte[] bytes = new byte[bufferLength];
 			byte[] bytes2 = new byte[bufferLength * 2];
 			double[] buffer = new double[bufferLength];
+
+			analyzer.preAnalyze();
 			while (true) {
 				int len = in.read(bytes);
 				if (len == -1) break;
@@ -59,8 +62,9 @@ public class Sample1
 					buffer[i] = bytes[i];
 				}
 
-				analyzer.startChunk(time.plusSeconds(second));
+				analyzer.preChunk(time.plusSeconds(second));
 				analyzer.processData(buffer, len, new Struct1<>(0.0));
+				analyzer.postChunk();
 
 				for (int i = 0; i < len; i++) {
 					int v = (int) buffer[i];
@@ -72,6 +76,7 @@ public class Sample1
 
 				second++;
 			}
+			analyzer.postAnalyze();
 		}
 
 	}
