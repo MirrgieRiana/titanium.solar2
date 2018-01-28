@@ -1,32 +1,25 @@
 package titanium.solar2.libs.analyze;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 
 import mirrg.lithium.struct.Struct1;
 
-public class Analyzer
+public class Analyzer extends DetectorBase<IFilter>
 {
 
-	private ArrayList<IFilter> filters = new ArrayList<>();
-
-	public void addFilter(IFilter filter)
+	public void preChunk(LocalDateTime time)
 	{
-		filters.add(filter);
-	}
-
-	public void startChunk(LocalDateTime time)
-	{
-		for (IFilter filter : filters) {
-			filter.startChunk(time);
-		}
+		listeners.forEach(l -> l.preChunk(time));
 	}
 
 	public void processData(double[] buffer, int length, Struct1<Double> sOffset)
 	{
-		for (IFilter filter : filters) {
-			filter.processData(buffer, length, sOffset);
-		}
+		listeners.forEach(l -> l.processData(buffer, length, sOffset));
+	}
+
+	public void postChunk()
+	{
+		listeners.forEach(l -> l.postChunk());
 	}
 
 }

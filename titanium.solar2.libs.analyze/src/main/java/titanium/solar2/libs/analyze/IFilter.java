@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 
 import mirrg.lithium.struct.Struct1;
 
-public interface IFilter
+public interface IFilter extends IAnalyzeListener
 {
 
 	/**
@@ -13,7 +13,7 @@ public interface IFilter
 	 * @param time
 	 *            このチャンクの開始位置の時刻を設定します。
 	 */
-	public default void startChunk(LocalDateTime time)
+	public default void preChunk(LocalDateTime time)
 	{
 
 	}
@@ -34,5 +34,13 @@ public interface IFilter
 	 *            加算する数値は正でなければなりません。
 	 */
 	public void processData(double[] buffer, int length, Struct1<Double> sOffset);
+
+	/**
+	 * チャンクの終了時に呼ばれます。
+	 */
+	public default void postChunk()
+	{
+
+	}
 
 }
