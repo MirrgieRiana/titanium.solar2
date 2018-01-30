@@ -3,6 +3,9 @@ package titanium.solar2.libs.analyze.filters;
 import mirrg.lithium.struct.Struct1;
 import titanium.solar2.libs.analyze.IFilter;
 
+/**
+ * 微分フィルタ。
+ */
 public class FilterDiff implements IFilter
 {
 

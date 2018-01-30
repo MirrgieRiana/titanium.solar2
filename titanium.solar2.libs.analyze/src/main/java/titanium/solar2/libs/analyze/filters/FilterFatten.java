@@ -4,7 +4,7 @@ import mirrg.lithium.struct.Struct1;
 import titanium.solar2.libs.analyze.IFilter;
 
 /**
- * 直近指定個数の最大値を得る。
+ * 直近指定個数サンプルのうちの最大値を得るフィルタ。
  */
 public class FilterFatten implements IFilter
 {

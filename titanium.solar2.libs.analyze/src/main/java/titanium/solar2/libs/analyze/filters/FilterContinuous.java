@@ -4,7 +4,7 @@ import mirrg.lithium.struct.Struct1;
 import titanium.solar2.libs.analyze.IFilter;
 
 /**
- * 前後指定オフセットに山がある場合にのみ通すフィルタ
+ * 孤立パルス除去：前後指定オフセットにパルスがある場合にのみ通すフィルタ。
  */
 public class FilterContinuous implements IFilter
 {

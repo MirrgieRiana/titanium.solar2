@@ -4,7 +4,7 @@ import mirrg.lithium.struct.Struct1;
 import titanium.solar2.libs.analyze.IFilter;
 
 /**
- * 積分する。
+ * 積分フィルタ。
  */
 public class FilterIntegral implements IFilter
 {

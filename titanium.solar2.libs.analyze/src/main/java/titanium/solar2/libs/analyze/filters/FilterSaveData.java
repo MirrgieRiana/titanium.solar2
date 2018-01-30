@@ -11,7 +11,7 @@ import titanium.solar2.libs.analyze.IFilter;
 import titanium.solar2.libs.time.ITimeRenderer;
 
 /**
- * データをビッグエンディアンで保存する。
+ * データを16bitのビッグエンディアンで保存する。
  */
 public class FilterSaveData implements IFilter
 {

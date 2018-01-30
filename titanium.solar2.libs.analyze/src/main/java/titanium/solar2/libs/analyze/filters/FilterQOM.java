@@ -6,7 +6,7 @@ import mirrg.lithium.struct.Struct1;
 import titanium.solar2.libs.analyze.IFilter;
 
 /**
- * √(x * a)
+ * Quality Of Mountain。√(x * a)
  */
 public class FilterQOM implements IFilter
 {
