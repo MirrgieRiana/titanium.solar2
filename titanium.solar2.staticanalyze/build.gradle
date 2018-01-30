@@ -1,0 +1,103 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'maven'
+apply plugin: 'application'
+
+// 基本設定
+
+project.group = 'titanium.solar2'
+project.archivesBaseName = 'titanium.solar2.staticanalyze'
+version = '0.0.1'
+def mainClass = 'titanium.solar2.staticanalyze.Main'
+
+// テンプレート
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+tasks.withType(AbstractCompile)*.options*.encoding = 'UTF-8'
+tasks.withType(GroovyCompile)*.groovyOptions*.encoding = 'UTF-8'
+
+task wrapper(type: Wrapper) {
+	gradleVersion = '2.0'
+}
+
+// 依存関係設定
+
+repositories {
+	mavenCentral()
+	maven {
+		url '../maven'
+	}
+	maven {
+		url 'https://raw.githubusercontent.com/MirrgieRiana/mirrg.lithium/master/maven'
+	}
+}
+
+dependencies {
+	testCompile group: 'junit', name: 'junit', version: '4.+'
+
+	//compile group: 'com.thoughtworks.xstream', name: 'xstream', version: '1.4.+'
+	//compile group: 'com.pi4j', name: 'pi4j-core', version: '1.1+'
+	//compile group: 'net.arnx', name: 'jsonic', version: '1.3.+'
+	//compile group: 'org.java-websocket', name: 'Java-WebSocket', version: '1.3.+'
+	//compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
+	compile group: 'org.codehaus.groovy', name: 'groovy-all', version: '2.5.+'
+
+	compile group: 'mirrg.lithium', name: 'mirrg.lithium.swing.util', version: '1.0+'
+
+	compile group: 'titanium.solar2', name: 'titanium.solar2.libs.analyze', version: '3.0+'
+	//compile group: 'titanium.solar2', name: 'titanium.solar2.libs.record', version: '1.0+'
+	compile group: 'titanium.solar2', name: 'titanium.solar2.libs.kisyou', version: '1.1+'
+	compile group: 'titanium.solar2', name: 'titanium.solar2.libs.time', version: '1.1+'
+	compile group: 'titanium.solar2', name: 'titanium.solar2.libs.util', version: '1.0+'
+}
+
+// 機能
+
+// Jarファイルを生成する
+jar {
+	manifest {
+		attributes 'Implementation-Title': 'Gradle Quickstart'
+		attributes 'Implementation-Version': version
+		attributes 'Main-Class' : mainClass
+	}
+}
+
+// ソースコードとJavadocを出力する
+task sourcesJar(type: Jar, dependsOn:classes) {
+	classifier = 'sources'
+	from sourceSets.main.allSource
+}
+task javadocJar(type: Jar, dependsOn:javadoc) {
+	classifier = 'javadoc'
+	from javadoc.destinationDir
+}
+javadoc {
+	options.charSet = 'UTF-8'
+	options.encoding = 'UTF-8'
+}
+artifacts {
+	archives sourcesJar
+	archives javadocJar
+}
+
+// 成果物を出力する
+uploadArchives {
+	repositories {
+		flatDir {
+			dirs "../repos"
+		}
+	}
+}
+
+// 依存先をJarファイルに含める
+jar {
+	from configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+}
+
+// 実行可能
+task runMain(type: JavaExec) {
+	main = mainClass
+	classpath = sourceSets.main.runtimeClasspath
+	standardInput = System.in
+}
