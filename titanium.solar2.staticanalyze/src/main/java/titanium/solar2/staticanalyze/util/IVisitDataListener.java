@@ -1,35 +1,64 @@
 package titanium.solar2.staticanalyze.util;
 
 import java.io.File;
-import java.util.zip.ZipEntry;
+import java.time.LocalDateTime;
 
 public interface IVisitDataListener
 {
 
-	public default void preFile(File zipFile, int i, int count)
+	/**
+	 * ファイルが処理される前に呼び出される。
+	 * ZIPファイルとdatファイルの両方で呼び出される。
+	 */
+	public default void preFile(File file, EnumDataFileType dataFileType, int fileIndex, int fileCount)
 	{
 
 	}
 
 	/**
-	 * @return このエントリーを処理するか否か
+	 * 処理前にZIPファイルのエントリー名もしくはdatファイルのパス名が通知される。
 	 */
-	public default boolean preEntry(ZipEntry zipEntry)
+	public default void preEntry(String entryName, LocalDateTime time)
 	{
-		return true;
+
 	}
 
+	/**
+	 * データが渡される。一つのエントリーに対して複数回呼び出されることがある。
+	 */
 	public default void onData(byte[] buffer, int start, int length)
 	{
 
 	}
 
-	public default void postEntry(ZipEntry zipEntry)
+	/**
+	 * エントリー処理の終了時に呼び出される。
+	 */
+	public default void postEntry()
 	{
 
 	}
 
-	public default void postFile(File zipFile, int i, int count)
+	/**
+	 * 受理できないエントリーを発見した際に呼び出される。
+	 */
+	public default void ignoreEntry(String entryName)
+	{
+
+	}
+
+	/**
+	 * ファイル処理の終了時に呼び出される。
+	 */
+	public default void postFile()
+	{
+
+	}
+
+	/**
+	 * 受理できないファイルを発見した際に呼び出される。
+	 */
+	public default void ignoreFile(File file)
 	{
 
 	}

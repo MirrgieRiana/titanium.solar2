@@ -3,17 +3,18 @@ package titanium.solar2.staticanalyze.util;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.text.MessageFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.function.Function;
-import java.util.regex.Matcher;
+import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
@@ -21,6 +22,7 @@ import java.util.zip.ZipInputStream;
 
 import mirrg.lithium.struct.Struct1;
 import titanium.solar2.libs.analyze.Analyzer;
+import titanium.solar2.staticanalyze.ILinePrinter;
 
 /**
  * {@link Analyzer} をZIPファイル内のデータに対して静的に適用するユーティリティ。
@@ -28,54 +30,38 @@ import titanium.solar2.libs.analyze.Analyzer;
 public class AnalyzeUtil
 {
 
-	public static void doAnalyze(File dir, String zipExtension, Analyzer analyzer) throws IOException
+	public static ILinePrinter out = System.out::println;
+
+	public static void doAnalyze(File directory, Analyzer analyzer) throws IOException
 	{
-		Pattern pattern = Pattern.compile("(?:.*/)?\\d{5}-(.*)\\.dat");
+		int bufferLength = 4096;
+		String zipExtension = ".zip";
+		Pattern pattern = Pattern.compile("\\d{5}-(.*)\\.dat");
 		DateTimeFormatter formatter1 = DateTimeFormatter.ofPattern("uuuuMMdd-HHmmss");
 		DateTimeFormatter formatter2 = DateTimeFormatter.ofPattern("uuuuMMdd-HHmmss-SSS");
-		double[] buffer2 = new double[4096];
 
 		analyzer.preAnalyze();
-		AnalyzeUtil.visitData(
-			buffer2.length,
-			dir,
-			array -> array.stream()
-				.filter(f -> f.getName().endsWith(zipExtension))
-				.sorted(Comparable::compareTo)
-				.collect(Collectors.toCollection(ArrayList::new)),
-			array -> array.stream()
-				.sorted(Comparable::compareTo)
-				.collect(Collectors.toCollection(ArrayList::new)),
+		processDirectory(
+			new byte[bufferLength],
 			new IVisitDataListener() {
+
+				double[] buffer2 = new double[bufferLength];
+
 				@Override
-				public void preFile(File zipFile, int i, int count)
+				public void preFile(File file, EnumDataFileType dataFileType, int fileIndex, int fileCount)
 				{
-					System.out.println(i + "/" + count + ": " + zipFile.getAbsolutePath());
+					out.println(MessageFormat.format("File Accepted: %s/%s [%s] %s",
+						fileIndex,
+						fileCount,
+						dataFileType.name(),
+						file.getAbsolutePath()));
 				}
 
 				@Override
-				public boolean preEntry(ZipEntry zipEntry)
+				public void preEntry(String entryName, LocalDateTime time)
 				{
-					Matcher matcher = pattern.matcher(zipEntry.getName());
-					if (matcher.matches()) {
-						try {
-							analyzer.preChunk(LocalDateTime.parse(matcher.group(1), formatter1));
-							System.out.println("Entry Accepted: " + zipEntry.getName());
-							return true;
-						} catch (DateTimeParseException e) {
-
-			}
-						try {
-							analyzer.preChunk(LocalDateTime.parse(matcher.group(1), formatter2));
-							System.out.println("Entry Accepted: " + zipEntry.getName());
-							return true;
-						} catch (DateTimeParseException e) {
-
-			}
-					}
-
-					System.out.println("Entry Ignored: " + zipEntry.getName());
-					return false;
+					out.println("Entry Accepted: " + entryName);
+					analyzer.preChunk(time);
 				}
 
 				@Override
@@ -88,54 +74,131 @@ public class AnalyzeUtil
 				}
 
 				@Override
-				public void postEntry(ZipEntry zipEntry)
+				public void postEntry()
 				{
 					analyzer.postChunk();
 				}
-			});
+
+				@Override
+				public void ignoreEntry(String entryName)
+				{
+					out.println("Entry Ignored: " + entryName);
+				}
+
+				@Override
+				public void ignoreFile(File file)
+				{
+					out.println("File Ignored: " + file.getAbsolutePath());
+				}
+
+			},
+			directory,
+			n -> n.endsWith(zipExtension),
+			new DatEntryNameParserOr(
+				new DatEntryNameParserSimple(pattern, formatter1),
+				new DatEntryNameParserSimple(pattern, formatter2)));
 		analyzer.postAnalyze();
 	}
 
+	//
+
 	/**
-	 * 指定ディレクトリ内の全ファイルから内のエントリーを辞書順に巡回し、バイナリデータを処理する。
+	 * ディレクトリを再帰的に検索しデータを読み出して通知する。
 	 */
-	public static void visitData(
-		int bufferLength,
-		File dir,
-		Function<ArrayList<File>, ArrayList<File>> filterZipFile,
-		Function<ArrayList<String>, ArrayList<String>> filterDataZipEntryName,
-		IVisitDataListener visitDataListener) throws IOException
+	public static void processDirectory(byte[] buffer, IVisitDataListener visitDataListener, File directory, Predicate<String> zipFileNamePredicate, IDatEntryNameParser datEntryNameParser)
+		throws IOException
 	{
-		byte[] buffer = new byte[bufferLength];
-		ArrayList<File> zipFiles = filterZipFile.apply(getFiles(dir));
+		ArrayList<File> files = getFiles(directory).stream()
+			.sorted(Comparable::compareTo)
+			.collect(Collectors.toCollection(ArrayList::new));
 
-		for (int i = 0; i < zipFiles.size(); i++) {
-			File zipFile = zipFiles.get(i);
+		for (int i = 0; i < files.size(); i++) {
+			File file = files.get(i);
 
-			visitDataListener.preFile(zipFile, i, zipFiles.size());
+			if (zipFileNamePredicate.test(file.getAbsolutePath())) {
 
-			visitZipEntries(zipFile, filterDataZipEntryName.apply(getZipEntryNames(zipFile)), (zipEntry, in) -> {
+				visitDataListener.preFile(file, EnumDataFileType.ZIP, i, files.size());
+				processZipFile(buffer, visitDataListener, file, datEntryNameParser);
+				visitDataListener.postFile();
 
-				if (visitDataListener.preEntry(zipEntry)) {
+				continue;
+			}
 
-					while (true) {
-						int length;
-						try {
-							length = in.read(buffer);
-						} catch (IOException e) {
-							throw new RuntimeException(e);
-						}
-						if (length == -1) break;
-						visitDataListener.onData(buffer, 0, length);
-					}
+			{
+				Optional<LocalDateTime> oTime = datEntryNameParser.parse(file.getName());
+				if (oTime.isPresent()) {
 
-					visitDataListener.postEntry(zipEntry);
+					visitDataListener.preFile(file, EnumDataFileType.DAT, i, files.size());
+					processDatFile(buffer, visitDataListener, file, oTime.get());
+					visitDataListener.postFile();
+
+					continue;
+				}
+			}
+
+			visitDataListener.ignoreFile(file);
+		}
+	}
+
+	/**
+	 * ZIPファイルの中からdatファイルを識別し、データを読み出して通知する。
+	 */
+	public static void processZipFile(byte[] buffer, IVisitDataListener visitDataListener, File zipFile, IDatEntryNameParser datEntryNameParser) throws IOException
+	{
+		visitZipEntries(zipFile, getZipEntryNames(zipFile).stream()
+			.sorted(Comparable::compareTo)
+			.collect(Collectors.toCollection(ArrayList::new)), (zipEntry, in) -> {
+				String entryName = zipEntry.getName();
+
+				String shortEntryName;
+				if (entryName.contains("/")) {
+					shortEntryName = entryName.substring(entryName.lastIndexOf('/') + 1);
+				} else {
+					shortEntryName = entryName;
 				}
 
+				Optional<LocalDateTime> oTime = datEntryNameParser.parse(shortEntryName);
+				if (!oTime.isPresent()) {
+					visitDataListener.ignoreEntry(entryName);
+					return;
+				}
+
+				visitDataListener.preEntry(entryName, oTime.get());
+				processInputStream(buffer, visitDataListener, in);
+				visitDataListener.postEntry();
+
 			});
+	}
 
-			visitDataListener.postFile(zipFile, i, zipFiles.size());
+	/**
+	 * datファイルからデータを読み出して通知する。
+	 */
+	public static void processDatFile(byte[] buffer, IVisitDataListener visitDataListener, File file, LocalDateTime time) throws IOException
+	{
+		try (InputStream in = new FileInputStream(file)) {
 
+			visitDataListener.preEntry(file.getAbsolutePath(), time);
+			processInputStream(buffer, visitDataListener, in);
+			visitDataListener.postEntry();
+
+		}
+	}
+
+	/**
+	 * InputStreamの中から読めるだけ全部データを読み出して通知する。
+	 */
+	public static void processInputStream(byte[] buffer, IVisitDataListener visitDataListener, InputStream in)
+	{
+		while (true) {
+			int length;
+			try {
+				length = in.read(buffer);
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+			if (length == -1) break;
+
+			visitDataListener.onData(buffer, 0, length);
 		}
 	}
 
@@ -169,7 +232,7 @@ public class AnalyzeUtil
 	}
 
 	/**
-	 * 指定ZIPファイルのエントリー名を列挙する。
+	 * 指定ZIPファイルのエントリー名をすべて列挙する。
 	 */
 	public static ArrayList<String> getZipEntryNames(File zipFile) throws IOException
 	{
@@ -188,7 +251,7 @@ public class AnalyzeUtil
 	}
 
 	/**
-	 * 指定ディレクトリ内のファイルを列挙する。
+	 * 指定ディレクトリ内のファイルを再帰的にすべて列挙する。
 	 */
 	public static ArrayList<File> getFiles(File dir) throws IOException
 	{
