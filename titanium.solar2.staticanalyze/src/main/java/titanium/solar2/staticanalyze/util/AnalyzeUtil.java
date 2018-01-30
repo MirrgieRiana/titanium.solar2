@@ -43,7 +43,7 @@ public class AnalyzeUtil
 
 		analyzer.preAnalyze();
 		try {
-			processDirectory(
+			processDirectoryOrFile(
 				new byte[bufferLength],
 				new IVisitDataListener() {
 
@@ -108,40 +108,86 @@ public class AnalyzeUtil
 
 	/**
 	 * ディレクトリを再帰的に検索しデータを読み出して通知する。
+	 * ファイルが与えられた場合、そのファイルだけを処理する。
 	 */
-	public static void processDirectory(byte[] buffer, IVisitDataListener visitDataListener, File directory, Predicate<String> zipFileNamePredicate, IDatEntryNameParser datEntryNameParser)
-		throws IOException, InterruptedException
+	public static void processDirectoryOrFile(
+		byte[] buffer,
+		IVisitDataListener visitDataListener,
+		File file,
+		Predicate<String> zipFileNamePredicate,
+		IDatEntryNameParser datEntryNameParser) throws IOException, InterruptedException
 	{
-		ArrayList<File> files = getFiles(directory).stream()
-			.sorted(Comparable::compareTo)
-			.collect(Collectors.toCollection(ArrayList::new));
+		if (file.isDirectory()) {
 
-		for (int i = 0; i < files.size(); i++) {
-			File file = files.get(i);
+			ArrayList<File> files = getFiles(file).stream()
+				.sorted(Comparable::compareTo)
+				.collect(Collectors.toCollection(ArrayList::new));
 
-			if (zipFileNamePredicate.test(file.getAbsolutePath())) {
+			for (int i = 0; i < files.size(); i++) {
+				File file2 = files.get(i);
 
-				visitDataListener.preFile(file, EnumDataFileType.ZIP, i, files.size());
-				processZipFile(buffer, visitDataListener, file, datEntryNameParser);
+				processFile(
+					buffer,
+					visitDataListener,
+					file2,
+					i + 1,
+					files.size(),
+					zipFileNamePredicate,
+					datEntryNameParser);
+
+			}
+
+		} else if (file.isFile()) {
+
+			processFile(
+				buffer,
+				visitDataListener,
+				file,
+				1,
+				1,
+				zipFileNamePredicate,
+				datEntryNameParser);
+
+		} else {
+
+		}
+	}
+
+	/**
+	 * ファイルを処理する。処理できない可能性もある。
+	 */
+	public static void processFile(
+		byte[] buffer,
+		IVisitDataListener visitDataListener,
+		File file,
+		int fileIndex,
+		int fileCount,
+		Predicate<String> zipFileNamePredicate,
+		IDatEntryNameParser datEntryNameParser) throws IOException, InterruptedException
+	{
+
+		if (zipFileNamePredicate.test(file.getAbsolutePath())) {
+
+			visitDataListener.preFile(file, EnumDataFileType.ZIP, fileIndex, fileCount);
+			processZipFile(buffer, visitDataListener, file, datEntryNameParser);
+			visitDataListener.postFile();
+
+			return;
+		}
+
+		{
+			Optional<LocalDateTime> oTime = datEntryNameParser.parse(file.getName());
+			if (oTime.isPresent()) {
+
+				visitDataListener.preFile(file, EnumDataFileType.DAT, fileIndex, fileCount);
+				processDatFile(buffer, visitDataListener, file, oTime.get());
 				visitDataListener.postFile();
 
-				continue;
+				return;
 			}
-
-			{
-				Optional<LocalDateTime> oTime = datEntryNameParser.parse(file.getName());
-				if (oTime.isPresent()) {
-
-					visitDataListener.preFile(file, EnumDataFileType.DAT, i, files.size());
-					processDatFile(buffer, visitDataListener, file, oTime.get());
-					visitDataListener.postFile();
-
-					continue;
-				}
-			}
-
-			visitDataListener.ignoreFile(file);
 		}
+
+		visitDataListener.ignoreFile(file);
 	}
 
 	/**

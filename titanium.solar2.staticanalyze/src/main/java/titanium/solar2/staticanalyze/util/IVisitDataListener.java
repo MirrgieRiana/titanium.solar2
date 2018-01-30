@@ -9,6 +9,9 @@ public interface IVisitDataListener
 	/**
 	 * ファイルが処理される前に呼び出されます。
 	 * このメソッドはZIPファイルとdatファイルの両方で呼び出されます。
+	 *
+	 * @param fileIndex
+	 *            1から始まる解析全体の中でのファイルの番号
 	 */
 	public default void preFile(File file, EnumDataFileType dataFileType, int fileIndex, int fileCount)
 	{
