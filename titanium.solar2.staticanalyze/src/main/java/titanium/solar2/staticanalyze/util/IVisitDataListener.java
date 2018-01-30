@@ -7,8 +7,8 @@ public interface IVisitDataListener
 {
 
 	/**
-	 * ファイルが処理される前に呼び出される。
-	 * ZIPファイルとdatファイルの両方で呼び出される。
+	 * ファイルが処理される前に呼び出されます。
+	 * このメソッドはZIPファイルとdatファイルの両方で呼び出されます。
 	 */
 	public default void preFile(File file, EnumDataFileType dataFileType, int fileIndex, int fileCount)
 	{
@@ -16,7 +16,7 @@ public interface IVisitDataListener
 	}
 
 	/**
-	 * 処理前にZIPファイルのエントリー名もしくはdatファイルのパス名が通知される。
+	 * 処理前にZIPファイルのエントリー名もしくはdatファイルのパス名が通知されます。
 	 */
 	public default void preEntry(String entryName, LocalDateTime time)
 	{
@@ -24,15 +24,16 @@ public interface IVisitDataListener
 	}
 
 	/**
-	 * データが渡される。一つのエントリーに対して複数回呼び出されることがある。
+	 * データが渡されます。一つのエントリーに対して複数回呼び出されることがあります。
 	 */
-	public default void onData(byte[] buffer, int start, int length)
+	public default void onData(byte[] buffer, int start, int length) throws InterruptedException
 	{
 
 	}
 
 	/**
-	 * エントリー処理の終了時に呼び出される。
+	 * エントリー処理の終了時に呼び出されます。
+	 * {@link #onData(byte[], int, int)} がスレッドの中断によって終了された場合も呼び出されます。
 	 */
 	public default void postEntry()
 	{
@@ -40,7 +41,7 @@ public interface IVisitDataListener
 	}
 
 	/**
-	 * 受理できないエントリーを発見した際に呼び出される。
+	 * 受理できないエントリーを発見した際に呼び出されます。
 	 */
 	public default void ignoreEntry(String entryName)
 	{
@@ -48,7 +49,8 @@ public interface IVisitDataListener
 	}
 
 	/**
-	 * ファイル処理の終了時に呼び出される。
+	 * ファイル処理の終了時に呼び出されます。
+	 * {@link #onData(byte[], int, int)} がスレッドの中断によって終了された場合も呼び出されます。
 	 */
 	public default void postFile()
 	{
@@ -56,7 +58,7 @@ public interface IVisitDataListener
 	}
 
 	/**
-	 * 受理できないファイルを発見した際に呼び出される。
+	 * 受理できないファイルを発見した際に呼び出されます。
 	 */
 	public default void ignoreFile(File file)
 	{

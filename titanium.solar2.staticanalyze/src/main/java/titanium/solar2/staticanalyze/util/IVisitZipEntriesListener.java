@@ -6,6 +6,6 @@ import java.util.zip.ZipEntry;
 public interface IVisitZipEntriesListener
 {
 
-	public void onEntry(ZipEntry zipEntry, InputStream in);
+	public void onEntry(ZipEntry zipEntry, InputStream in) throws InterruptedException;
 
 }
