@@ -10,18 +10,15 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Optional;
 import java.util.function.Predicate;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import mirrg.lithium.logging.Logger;
 import mirrg.lithium.logging.LoggerPrintStream;
-import mirrg.lithium.struct.Struct1;
 import titanium.solar2.libs.analyze.Analyzer;
 
 /**
@@ -31,74 +28,6 @@ public class AnalyzeUtil
 {
 
 	public static Logger out = new LoggerPrintStream(System.out);
-
-	public static void doAnalyze(File directory, Analyzer analyzer) throws IOException, InterruptedException
-	{
-		int bufferLength = 4096;
-		analyzer.preAnalyze();
-		try {
-			processDirectoryOrFile(
-				new byte[bufferLength],
-				new IVisitDataListener() {
-
-					double[] buffer2 = new double[bufferLength];
-
-					@Override
-					public void preFile(File file, EnumDataFileType dataFileType, int fileIndex, int fileCount)
-					{
-						out.info(String.format("File Accepted: %s/%s [%s] %s",
-							fileIndex,
-							fileCount,
-							dataFileType.name(),
-							file.getAbsolutePath()));
-					}
-
-					@Override
-					public void preEntry(String entryName, LocalDateTime time, int entryIndex, int entryCount)
-					{
-						out.info("Entry Accepted: " + entryName);
-						analyzer.preChunk(time);
-					}
-
-					@Override
-					public void onData(byte[] buffer, int start, int length)
-					{
-						for (int i = 0; i < length; i++) {
-							buffer2[i] = buffer[i + start];
-						}
-						analyzer.processData(buffer2, length, new Struct1<>(0.0));
-					}
-
-					@Override
-					public void postEntry()
-					{
-						analyzer.postChunk();
-					}
-
-					@Override
-					public void ignoreEntry(String entryName, int entryIndex, int entryCount)
-					{
-						out.debug("Entry Ignored: " + entryName);
-					}
-
-					@Override
-					public void ignoreFile(File file, int fileIndex, int fileCount)
-					{
-						out.debug("File Ignored: " + file.getAbsolutePath());
-					}
-
-				},
-				directory,
-				n -> n.endsWith(".zip"),
-				new DatEntryNameParserOr(
-					new DatEntryNameParserSimple(Pattern.compile("\\d{5}-(.*)\\.dat"), DateTimeFormatter.ofPattern("uuuuMMdd-HHmmss")),
-					new DatEntryNameParserSimple(Pattern.compile("\\d{5}-(.*)\\.dat"), DateTimeFormatter.ofPattern("uuuuMMdd-HHmmss-SSS"))));
-		} finally {
-			analyzer.postAnalyze();
-		}
-	}
-
-	//
 
 	/**
 	 * ディレクトリを再帰的に検索しデータを読み出して通知する。
