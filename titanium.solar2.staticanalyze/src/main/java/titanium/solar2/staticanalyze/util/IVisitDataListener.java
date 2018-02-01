@@ -20,8 +20,11 @@ public interface IVisitDataListener
 
 	/**
 	 * 処理前にZIPファイルのエントリー名もしくはdatファイルのパス名が通知されます。
+	 *
+	 * @param entryIndex
+	 *            1から始まるファイルの中でのエントリーの番号
 	 */
-	public default void preEntry(String entryName, LocalDateTime time)
+	public default void preEntry(String entryName, LocalDateTime time, int entryIndex, int entryCount)
 	{
 
 	}
@@ -46,7 +49,7 @@ public interface IVisitDataListener
 	/**
 	 * 受理できないエントリーを発見した際に呼び出されます。
 	 */
-	public default void ignoreEntry(String entryName)
+	public default void ignoreEntry(String entryName, int entryIndex, int entryCount)
 	{
 
 	}
@@ -62,8 +65,11 @@ public interface IVisitDataListener
 
 	/**
 	 * 受理できないファイルを発見した際に呼び出されます。
+	 *
+	 * @param fileIndex
+	 *            1から始まるファイルの中でのエントリーの番号
 	 */
-	public default void ignoreFile(File file)
+	public default void ignoreFile(File file, int fileIndex, int fileCount)
 	{
 
 	}
