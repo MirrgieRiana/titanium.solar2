@@ -1,4 +1,4 @@
-package titanium.solar2.libs.analyze.filters;
+package titanium.solar2.analyze.listeners;
 
 import org.apache.commons.math3.util.FastMath;
 

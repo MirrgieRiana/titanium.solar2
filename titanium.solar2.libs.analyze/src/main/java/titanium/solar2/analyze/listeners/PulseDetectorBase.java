@@ -1,4 +1,4 @@
-package titanium.solar2.libs.analyze.pulsedetectors;
+package titanium.solar2.analyze.listeners;
 
 import java.time.LocalDateTime;
 

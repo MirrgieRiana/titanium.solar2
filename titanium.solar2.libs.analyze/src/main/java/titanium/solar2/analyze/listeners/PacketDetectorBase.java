@@ -1,4 +1,4 @@
-package titanium.solar2.libs.analyze.packetdetectors;
+package titanium.solar2.analyze.listeners;
 
 import titanium.solar2.libs.analyze.IPulseListener;
 import titanium.solar2.libs.analyze.ItemDetectorBase;

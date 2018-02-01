@@ -1,4 +1,4 @@
-package titanium.solar2.libs.analyze.packetdetectors;
+package titanium.solar2.analyze.listeners;
 
 import java.util.ArrayList;
 import java.util.Optional;
