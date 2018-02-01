@@ -51,12 +51,12 @@ import javax.swing.Timer;
 import javax.swing.ToolTipManager;
 import javax.swing.TransferHandler;
 import javax.swing.WindowConstants;
-import mirrg.lithium.lang.HFile;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.text.AttributeSet;
 
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
+import mirrg.lithium.lang.HFile;
 import mirrg.lithium.lang.HLog;
 import mirrg.lithium.logging.LoggerPrintStream;
 import mirrg.lithium.logging.LoggerRelay;
