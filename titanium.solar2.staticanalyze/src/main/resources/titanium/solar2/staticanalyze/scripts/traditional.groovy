@@ -21,9 +21,7 @@ process(new Analyzer(), { a ->
 							if ((CRCUtil.crc16(
 								(byte) bs[0],
 								(byte) bs[1],
-								(byte) bs[2],
-								(byte) bs[3],
-								(byte) bs[4]) & 0xff) == bs[3] || true) {
+								(byte) bs[2]) & 0xff) == bs[3]) {
 
 								out.println(PacketRenderer.toString(packet, TimeRendererSimple.INSTANCE, samplesPerSecond));
 								count++;
