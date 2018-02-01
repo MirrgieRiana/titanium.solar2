@@ -1,5 +1,7 @@
 package titanium.solar2.libs.analyze;
 
+import titanium.solar2.analyze.Pulse;
+
 public interface IPulseListener extends IItemListener<Pulse>
 {
 

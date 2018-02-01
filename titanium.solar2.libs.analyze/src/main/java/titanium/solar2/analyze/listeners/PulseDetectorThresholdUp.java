@@ -1,6 +1,6 @@
 package titanium.solar2.analyze.listeners;
 
-import titanium.solar2.libs.analyze.Pulse;
+import titanium.solar2.analyze.Pulse;
 
 /**
  * 閾値を超えたときに出力。Yは閾値を超えたときの速度。

@@ -1,6 +1,6 @@
 package titanium.solar2.libs.analyze.renderer;
 
-import titanium.solar2.libs.analyze.Pulse;
+import titanium.solar2.analyze.Pulse;
 
 public class PulseRenderer
 {

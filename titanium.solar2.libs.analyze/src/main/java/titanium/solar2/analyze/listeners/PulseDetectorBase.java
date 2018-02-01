@@ -3,10 +3,10 @@ package titanium.solar2.analyze.listeners;
 import java.time.LocalDateTime;
 
 import mirrg.lithium.struct.Struct1;
+import titanium.solar2.analyze.Pulse;
 import titanium.solar2.libs.analyze.DetectorBase;
 import titanium.solar2.libs.analyze.IFilter;
 import titanium.solar2.libs.analyze.IPulseListener;
-import titanium.solar2.libs.analyze.Pulse;
 
 public abstract class PulseDetectorBase extends DetectorBase<IPulseListener> implements IFilter
 {

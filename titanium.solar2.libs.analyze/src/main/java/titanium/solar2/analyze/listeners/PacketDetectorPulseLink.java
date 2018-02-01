@@ -8,8 +8,8 @@ import org.apache.commons.math3.util.FastMath;
 
 import mirrg.lithium.struct.ImmutableArray;
 import mirrg.lithium.struct.Tuple3;
-import titanium.solar2.libs.analyze.Packet;
-import titanium.solar2.libs.analyze.Pulse;
+import titanium.solar2.analyze.Packet;
+import titanium.solar2.analyze.Pulse;
 
 /**
  * <b>パルスリンク法</b><br>

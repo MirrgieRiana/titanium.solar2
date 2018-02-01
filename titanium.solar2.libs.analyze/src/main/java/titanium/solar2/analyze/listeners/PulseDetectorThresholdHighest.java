@@ -1,6 +1,6 @@
 package titanium.solar2.analyze.listeners;
 
-import titanium.solar2.libs.analyze.Pulse;
+import titanium.solar2.analyze.Pulse;
 
 /**
  * 閾値以上である間、最大地点が更新されるごとにその地点を記録。

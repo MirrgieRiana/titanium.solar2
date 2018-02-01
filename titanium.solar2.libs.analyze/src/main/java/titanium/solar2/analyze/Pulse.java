@@ -1,4 +1,4 @@
-package titanium.solar2.libs.analyze;
+package titanium.solar2.analyze;
 
 import java.time.LocalDateTime;
 

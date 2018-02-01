@@ -3,8 +3,8 @@ package titanium.solar2.analyze.listeners;
 import java.util.ArrayList;
 
 import mirrg.lithium.struct.ImmutableArray;
-import titanium.solar2.libs.analyze.Packet;
-import titanium.solar2.libs.analyze.Pulse;
+import titanium.solar2.analyze.Packet;
+import titanium.solar2.analyze.Pulse;
 
 /**
  * 受け取ったパルスを順番にすべて受理するパケットディテクターです。

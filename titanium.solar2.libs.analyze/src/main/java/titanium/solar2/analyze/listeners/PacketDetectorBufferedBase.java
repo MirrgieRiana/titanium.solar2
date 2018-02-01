@@ -2,7 +2,7 @@ package titanium.solar2.analyze.listeners;
 
 import java.util.ArrayDeque;
 
-import titanium.solar2.libs.analyze.Pulse;
+import titanium.solar2.analyze.Pulse;
 
 /**
  * パルスを一旦キューにバッファリングし、

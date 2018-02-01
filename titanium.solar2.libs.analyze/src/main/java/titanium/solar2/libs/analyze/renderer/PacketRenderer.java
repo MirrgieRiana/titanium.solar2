@@ -5,7 +5,7 @@ import java.util.stream.IntStream;
 
 import org.apache.commons.lang3.StringUtils;
 
-import titanium.solar2.libs.analyze.Packet;
+import titanium.solar2.analyze.Packet;
 import titanium.solar2.libs.time.ITimeRenderer;
 
 public class PacketRenderer
