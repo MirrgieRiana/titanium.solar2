@@ -37,19 +37,13 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
-import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFormattedTextField;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JSlider;
-import javax.swing.JSplitPane;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
 import javax.swing.SwingUtilities;
@@ -57,7 +51,7 @@ import javax.swing.Timer;
 import javax.swing.ToolTipManager;
 import javax.swing.TransferHandler;
 import javax.swing.WindowConstants;
-import javax.swing.border.EmptyBorder;
+import mirrg.lithium.lang.HFile;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.text.AttributeSet;
 
@@ -508,13 +502,6 @@ public class Main
 		return DateTimeFormatter.ofPattern("uuuu/MM/dd HH:mm:ss.SSS").format(time);
 	}
 
-	// TODO mirrg
-	private static FileOutputStream getOutputStreamAndMkdirs(File file) throws FileNotFoundException
-	{
-		file.getAbsoluteFile().getParentFile().mkdirs();
-		return new FileOutputStream(file);
-	}
-
 	//
 
 	private static Thread thread = null;
@@ -546,7 +533,7 @@ public class Main
 
 			thread = new Thread(() -> {
 				try {
-					try (PrintStream out1 = new PrintStream(getOutputStreamAndMkdirs(new File(textFieldSaveFile.getText())));
+					try (PrintStream out1 = new PrintStream(HFile.getOutputStreamAndMkdirs(new File(textFieldSaveFile.getText())));
 						OutputStreamLogging out2 = new OutputStreamLogging(loggerTextPaneOutput)) {
 						OutputStream out3 = new OutputStream() {
 							@Override
@@ -826,80 +813,6 @@ public class Main
 
 			thread.interrupt();
 		}
-	}
-
-	//
-
-	// TODO mirrg lib
-	public static JMenuItem createJMenuItem(String text, ActionListener actionListener)
-	{
-		JMenuItem menuItem = new JMenuItem(text);
-		menuItem.addActionListener(actionListener);
-		return menuItem;
-	}
-
-	// TODO mirrg lib
-	public static JMenu createJMenu(String text, Component... components)
-	{
-		JMenu menu = new JMenu(text);
-		for (Component component : components) {
-			menu.add(component);
-		}
-		return menu;
-	}
-
-	// TODO mirrg lib
-	public static JMenuBar createJMenuBar(Component... components)
-	{
-		JMenuBar menuBar = new JMenuBar();
-		for (Component component : components) {
-			menuBar.add(component);
-		}
-		return menuBar;
-	}
-
-	// TODO mirrg lib
-	public static JPanel createMargin(int margin, Component createBorderPanelUp)
-	{
-		return process(createPanel(createBorderPanelUp), c -> {
-			c.setLayout(new CardLayout());
-			c.setBorder(new EmptyBorder(margin, margin, margin, margin));
-		});
-	}
-
-	// TODO mirrg lib
-	public static JSplitPane createSplitPaneHorizontal(Component c1, Component c2)
-	{
-		return new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, true, c1, c2);
-	}
-
-	// TODO mirrg lib
-	public static JSplitPane createSplitPaneHorizontal(double resizeWeight, Component c1, Component c2)
-	{
-		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, true, c1, c2);
-		splitPane.setResizeWeight(resizeWeight);
-		return splitPane;
-	}
-
-	// TODO mirrg lib
-	public static JSplitPane createSplitPaneVertical(Component c1, Component c2)
-	{
-		return new JSplitPane(JSplitPane.VERTICAL_SPLIT, true, c1, c2);
-	}
-
-	// TODO mirrg lib
-	public static JSplitPane createSplitPaneVertical(double resizeWeight, Component c1, Component c2)
-	{
-		JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true, c1, c2);
-		splitPane.setResizeWeight(resizeWeight);
-		return splitPane;
-	}
-
-	// TODO mirrg lib
-	private static <T extends JComponent> T setToolTipText(T component, String string)
-	{
-		component.setToolTipText(string);
-		return component;
 	}
 
 }
