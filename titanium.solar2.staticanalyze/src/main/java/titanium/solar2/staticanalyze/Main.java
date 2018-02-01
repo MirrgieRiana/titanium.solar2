@@ -69,7 +69,6 @@ import mirrg.lithium.logging.LoggerTextPane;
 import mirrg.lithium.logging.OutputStreamLogging;
 import mirrg.lithium.struct.Struct1;
 import mirrg.lithium.swing.util.HSwing;
-import titanium.solar2.BaseDir;
 import titanium.solar2.libs.analyze.Analyzer;
 import titanium.solar2.libs.analyze.IFilter;
 import titanium.solar2.staticanalyze.util.AnalyzeUtil;
@@ -508,6 +507,13 @@ public class Main
 		return DateTimeFormatter.ofPattern("uuuu/MM/dd HH:mm:ss.SSS").format(time);
 	}
 
+	// TODO mirrg
+	private static FileOutputStream getOutputStreamAndMkdirs(File file) throws FileNotFoundException
+	{
+		file.getAbsoluteFile().getParentFile().mkdirs();
+		return new FileOutputStream(file);
+	}
+
 	//
 
 	private static Thread thread = null;
@@ -539,7 +545,7 @@ public class Main
 
 			thread = new Thread(() -> {
 				try {
-					try (PrintStream out1 = new PrintStream(BaseDir.getOutputStreamAndMkdirs(new File(textFieldSaveFile.getText())));
+					try (PrintStream out1 = new PrintStream(getOutputStreamAndMkdirs(new File(textFieldSaveFile.getText())));
 						OutputStreamLogging out2 = new OutputStreamLogging(loggerTextPaneOutput)) {
 						OutputStream out3 = new OutputStream() {
 							@Override
