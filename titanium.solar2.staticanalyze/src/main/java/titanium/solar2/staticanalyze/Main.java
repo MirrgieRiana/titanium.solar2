@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.DecimalFormat;
@@ -648,8 +649,14 @@ public class Main
 
 	public static String getResourceAsString(String name)
 	{
-		return new BufferedReader(new InputStreamReader(Main.class.getResourceAsStream(name))).lines()
-			.collect(Collectors.joining(System.lineSeparator()));
+		try {
+			return new BufferedReader(new InputStreamReader(Main.class.getResourceAsStream(name), "UTF-8")).lines()
+				.collect(Collectors.joining(System.lineSeparator()));
+		} catch (UnsupportedEncodingException e) {
+			AnalyzeUtil.out.error(e);
+			return new BufferedReader(new InputStreamReader(Main.class.getResourceAsStream(name))).lines()
+				.collect(Collectors.joining(System.lineSeparator()));
+		}
 	}
 
 	public static URL getResourceAsURL(String name)
