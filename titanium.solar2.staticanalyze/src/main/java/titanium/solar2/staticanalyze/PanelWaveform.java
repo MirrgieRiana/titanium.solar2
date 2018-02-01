@@ -12,6 +12,7 @@ import java.util.Iterator;
 import javax.swing.JPanel;
 
 import mirrg.lithium.struct.Tuple;
+import mirrg.lithium.swing.util.SwingThreadUnsafe;
 
 public class PanelWaveform extends JPanel
 {
@@ -23,87 +24,112 @@ public class PanelWaveform extends JPanel
 	private int position = 0;
 	private double zoom = 1;
 
+	private Object lock = new Object();
+
 	public PanelWaveform()
 	{
 		addComponentListener(new ComponentAdapter() {
 			@Override
 			public void componentResized(ComponentEvent e)
 			{
-				initImage();
-				if (position >= getWidth()) position = 0;
-				draw();
-				repaint();
+				resetImage();
+				drawAll();
 			}
 
 			@Override
 			public void componentShown(ComponentEvent e)
 			{
-				initImage();
-				if (position >= getWidth()) position = 0;
-				draw();
-				repaint();
+				resetImage();
+				drawAll();
+			}
+
+			private void resetImage()
+			{
+				synchronized (lock) {
+					initialized = true;
+					image = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_RGB);
+					graphics = image.createGraphics();
+					if (position >= getWidth()) position = 0;
+				}
 			}
 		});
+	}
+
+	//
+
+	public void setZoom(double zoom)
+	{
+		synchronized (lock) {
+			this.zoom = zoom;
+
+			if (initialized) {
+				drawAllImpl();
+			}
+		}
+
+		repaint();
+	}
+
+	public void addEntry(double min, double max)
+	{
+		synchronized (lock) {
+			synchronized (ranges) {
+				ranges.addFirst(new Tuple<>(min, max));
+				while (ranges.size() > 5000) {
+					ranges.removeLast();
+				}
+			}
+
+			if (initialized) {
+				drawGraph(position, min, max);
+				position++;
+				if (position >= getWidth()) position = 0;
+				drawCaret(position);
+			}
+		}
+
+		repaint();
 	}
 
 	@Override
 	public void paint(Graphics g)
 	{
-		if (!initialized) return;
-
-		if (image != null) {
-			g.drawImage(image, 0, 0, null);
+		synchronized (lock) {
+			if (initialized) {
+				g.drawImage(image, 0, 0, null);
+			}
 		}
 	}
 
-	private void initImage()
+	public void drawAll()
 	{
-		initialized = true;
-		image = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_RGB);
-		graphics = image.createGraphics();
-	}
-
-	public void setZoom(double zoom)
-	{
-		this.zoom = zoom;
-		draw();
-	}
-
-	public void addEntry(double min, double max)
-	{
-		synchronized (ranges) {
-			ranges.addFirst(new Tuple<>(min, max));
-			while (ranges.size() > 5000) {
-				ranges.removeLast();
+		synchronized (lock) {
+			if (initialized) {
+				drawAllImpl();
 			}
 		}
 
-		if (!initialized) return;
-
-		drawGraph(position, min, max);
-		position++;
-		if (position >= getWidth()) position = 0;
-		drawCaret(position);
 		repaint();
 	}
 
-	private void draw()
+	//
+
+	@SwingThreadUnsafe
+	private void drawAllImpl()
 	{
 		graphics.setColor(Color.white);
 		graphics.fillRect(0, 0, getWidth(), getHeight());
 
-		synchronized (ranges) {
-			int p = position - 1;
-			Iterator<Tuple<Double, Double>> iterator = ranges.iterator();
-			for (int i = 0; i < getWidth() - 1; i++) {
+		int p = position - 1;
+		Iterator<Tuple<Double, Double>> iterator = ranges.iterator();
+		for (int i = 0; i < getWidth() - 1; i++) {
 
-				if (!iterator.hasNext()) break;
-				Tuple<Double, Double> range = iterator.next();
-				drawGraphLine(p, range.x, range.y);
+			if (!iterator.hasNext()) break;
+			Tuple<Double, Double> range = iterator.next();
+			drawGraphLine(p, range.x, range.y);
 
-				p--;
-				if (p == -1) p = getWidth() - 1;
-			}
+			p--;
+			if (p == -1) p = getWidth() - 1;
 		}
 
 		graphics.setColor(Color.red);
@@ -111,6 +137,7 @@ public class PanelWaveform extends JPanel
 		drawCaret(position);
 	}
 
+	@SwingThreadUnsafe
 	private void drawGraph(int position, double min, double max)
 	{
 		graphics.setColor(Color.white);
@@ -120,6 +147,7 @@ public class PanelWaveform extends JPanel
 		graphics.fillRect(position, getHeight() / 2, 1, 1);
 	}
 
+	@SwingThreadUnsafe
 	private void drawGraphLine(int position, double min, double max)
 	{
 		graphics.setColor(Color.black);
@@ -128,6 +156,7 @@ public class PanelWaveform extends JPanel
 		graphics.fillRect(position, max2, 1, min2 - max2);
 	}
 
+	@SwingThreadUnsafe
 	private void drawCaret(int position)
 	{
 		graphics.setColor(Color.green);
