@@ -158,6 +158,17 @@ public class Main
 			createJMenu("ヘルプ",
 				createJMenuItem("ヒント", e -> {
 					JOptionPane.showMessageDialog(frame, "GUIコンポーネントにカーソルを合わせるとヒントが表示されます。");
+				}),
+				createJMenuItem("更新履歴", e -> {
+					JOptionPane.showMessageDialog(frame, "<html>"
+						+ "<h3>0.0.1</h3>"
+						+ "・最初のリリース"
+						+ "<h3>0.0.2</h3>"
+						+ "・解析スクリプト入力欄を豪華（RSyntaxTextArea）に<br>"
+						+ "・解析スクリプト入力欄にファイルをドロップするとインポートするように<br>"
+						+ "・解析スクリプトのデフォルトインポートを変更<br>"
+						+ "・解析スクリプトの組み込み変数context追加<br>"
+						+ "・更新履歴欄の追加");
 				}))));
 		{
 			Component mainPane = createBorderPanelUp(
