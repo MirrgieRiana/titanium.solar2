@@ -391,7 +391,6 @@ public class Main
 							+ "1目盛りにつき表示の縮尺が10倍になります。"), c -> {
 								c.addChangeListener(e -> {
 									panelWaveform.setZoom(Math.pow(10, 1.0 * c.getValue() / 20));
-									panelWaveform.repaint();
 								});
 								c.setPreferredSize(new Dimension(32, 64));
 								c.setMajorTickSpacing(20);
