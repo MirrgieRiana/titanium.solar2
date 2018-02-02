@@ -326,7 +326,9 @@ public class Main
 						+ "・context - 外部ファイルの読み込みなどを行うオブジェクトです。<br>"
 						+ "・samplesPerSecond - フォーム上で指定されたサンプリングレートです。<br>"
 						+ "・out - 解析結果を出力するためのPrintStreamです。<br>"
-						+ "・filterExtenstion - グラフの表示などを行う拡張フィルタです。<br>"), 200, 200),
+						+ "・filterExtenstion - グラフの表示などを行う拡張フィルタです。<br>"
+						+ "<br>"
+						+ "この入力欄にはファイルをロドップできます。"), 200, 200),
 					createBorderPanelLeft(
 						setToolTipText(buttonValidate = createButton("スクリプトの検証", e -> {
 							Analyzer analyzer;
