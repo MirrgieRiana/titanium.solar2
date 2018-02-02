@@ -1,2 +1,4 @@
 !build/classes
 /build/
+staticanalyze.properties
+*.txt
