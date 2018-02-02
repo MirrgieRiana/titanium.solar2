@@ -1,8 +1,6 @@
-import java.time.LocalDateTime
-
-import mirrg.lithium.struct.Struct1
-
 // サンプル
+import java.time.LocalDateTime
+import mirrg.lithium.struct.Struct1
 
 //このスクリプトでは以下のパッケージが暗黙にインポートされます。
 //import titanium.solar2.analyze.*
