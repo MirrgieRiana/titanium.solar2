@@ -3,6 +3,7 @@ package titanium.solar2.staticanalyze;
 import static mirrg.lithium.swing.util.HSwing.*;
 
 import java.awt.CardLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -22,7 +23,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -45,7 +45,6 @@ import javax.swing.JOptionPane;
 import javax.swing.JProgressBar;
 import javax.swing.JSlider;
 import javax.swing.JTextField;
-import javax.swing.JTextPane;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.ToolTipManager;
@@ -53,6 +52,10 @@ import javax.swing.TransferHandler;
 import javax.swing.WindowConstants;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.text.AttributeSet;
+
+import org.fife.ui.rsyntaxtextarea.RSyntaxDocument;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
@@ -97,7 +100,7 @@ public class Main
 	private static String KEY_IMPORT_AND_EXPORT_CURRENT_DIRECTORY = "importAndExport.currentDirectory";
 	private static String KEY_PRESETS = "presets";
 
-	private static JTextPane textPaneScript;
+	private static RSyntaxTextArea textAreaScript;
 
 	private static JButton buttonValidate;
 	private static JFormattedTextField textFieldSamplesPerSecond;
@@ -242,7 +245,8 @@ public class Main
 										return;
 									}
 
-									textPaneScript.setText(source);
+									textAreaScript.setText(source);
+									textAreaScript.setCaretPosition(0);
 								});
 							}),
 						setToolTipText(buttonImport = createButton("インポート", e -> {
@@ -269,7 +273,7 @@ public class Main
 								if (fileChooser.showSaveDialog(frame) == JFileChooser.APPROVE_OPTION) {
 									p.set(KEY_IMPORT_AND_EXPORT_CURRENT_DIRECTORY, fileChooser.getCurrentDirectory().getAbsolutePath());
 									try (PrintStream out = new PrintStream(new FileOutputStream(fileChooser.getSelectedFile()))) {
-										out.print(textPaneScript.getText());
+										out.print(textAreaScript.getText());
 									}
 									addPreset(fileChooser.getSelectedFile().toURI().toURL().toString(), false);
 								}
@@ -279,37 +283,36 @@ public class Main
 							}
 						}), "解析スクリプトをファイルに保存します。"))),
 				createBorderPanelDown(
-					createScrollPane(setToolTipText(process(textPaneScript = new JTextPane(), c -> {
+					createScrollPane(setToolTipText(process(textAreaScript = new RSyntaxTextArea(), c -> {
+						c.setDocument(new RSyntaxDocument(SyntaxConstants.SYNTAX_STYLE_GROOVY));
 						c.setFont(new Font(Font.MONOSPACED, Font.PLAIN, c.getFont().getSize()));
+						c.setTextAntiAliasHint("VALUE_TEXT_ANTIALIAS_ON");
+						c.setCurrentLineHighlightColor(Color.decode("#eeeeff"));
+						c.setAnimateBracketMatching(false);
+						c.setBackground(Color.decode("#ffffee"));
+						c.setTabSize(4);
 						c.setTransferHandler(new TransferHandler() {
-							private File file;
-
 							@Override
-							public boolean canImport(TransferSupport support)
+							public boolean canImport(TransferSupport transferSupport)
 							{
-								if (!support.isDrop()) return false;
-								if (!support.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) return false;
-
-								try {
-									@SuppressWarnings("unchecked")
-									List<File> files = (List<File>) support.getTransferable().getTransferData(DataFlavor.javaFileListFlavor);
-									if (files.size() != 1) return false;
-									file = files.get(0);
-									if (!file.isFile()) return false;
-								} catch (Exception e) {
-									return false;
-								}
+								if (!transferSupport.isDrop()) return false;
+								if (!transferSupport.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) return false;
 								return true;
 							}
 
 							@Override
-							public boolean importData(TransferSupport support)
+							public boolean importData(TransferSupport transferSupport)
 							{
-								// TODO D&D読み込み実装
-								if (!canImport(support)) return false;
+								if (!canImport(transferSupport)) return false;
+
 								try {
-									addPreset(file.toURI().toURL().toString(), true);
-								} catch (MalformedURLException e) {
+									@SuppressWarnings("unchecked")
+									List<File> files = (List<File>) transferSupport.getTransferable().getTransferData(DataFlavor.javaFileListFlavor);
+									if (files.size() == 1) {
+										addPreset(files.get(0).toURI().toURL().toString(), true);
+										return true;
+									}
+								} catch (Exception e) {
 									AnalyzeUtil.out.error(e);
 								}
 								return true;
@@ -590,7 +593,7 @@ public class Main
 						comboBoxPresets.setEnabled(true);
 						buttonImport.setEnabled(true);
 						buttonExport.setEnabled(true);
-						textPaneScript.setEnabled(true);
+						textAreaScript.setEnabled(true);
 						buttonValidate.setEnabled(true);
 						textFieldSamplesPerSecond.setEnabled(true);
 						buttonAnalyze.setEnabled(true);
@@ -605,7 +608,7 @@ public class Main
 			comboBoxPresets.setEnabled(false);
 			buttonImport.setEnabled(false);
 			buttonExport.setEnabled(false);
-			textPaneScript.setEnabled(false);
+			textAreaScript.setEnabled(false);
 			buttonValidate.setEnabled(false);
 			textFieldSamplesPerSecond.setEnabled(false);
 			buttonAnalyze.setEnabled(false);
@@ -649,7 +652,7 @@ public class Main
 		GroovyShell groovyShell = new GroovyShell(binding);
 
 		String header = getResourceAsString("header.groovy");
-		String src = textPaneScript.getText();
+		String src = textAreaScript.getText();
 
 		return (Analyzer) groovyShell.evaluate(header + System.lineSeparator() + src);
 	}
