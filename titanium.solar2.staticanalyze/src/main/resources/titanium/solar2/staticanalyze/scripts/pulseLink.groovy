@@ -2,7 +2,7 @@
 import titanium.solar2.libs.util.CRCUtil;
 import titanium.solar2.libs.analyze.renderer.PacketRenderer;
 
-double[] waveform = WaveformUtils.normalize(WaveformUtils.fromCSV(Main.getResourceAsURL("scripts/sample_waveform.csv")));
+double[] waveform = WaveformUtils.normalize(WaveformUtils.fromCSV(context.getResourceAsURL("scripts/sample_waveform.csv")));
 int waveformHotspot = 5;
 int threshold = 2000;
 int firstThreshold = 3000;
@@ -39,7 +39,7 @@ process(new Analyzer(), { a ->
 				@Override
 				public void postAnalyze()
 				{
-					AnalyzeUtil.out.info("Packet Count: " + count);
+					context.getLogger().info("Packet Count: " + count);
 				}
 			});
 		}));

@@ -1,11 +1,11 @@
-package titanium.solar2.staticanalyze.perioddetectors;
+package titanium.solar2.analyze.listeners;
 
 import java.time.LocalDateTime;
 
 import mirrg.lithium.struct.Struct1;
+import titanium.solar2.analyze.Period;
 import titanium.solar2.libs.analyze.IFilter;
 import titanium.solar2.libs.analyze.ItemDetectorBase;
-import titanium.solar2.staticanalyze.Period;
 
 public class PeriodDetectorThreshold extends ItemDetectorBase<Period> implements IFilter
 {

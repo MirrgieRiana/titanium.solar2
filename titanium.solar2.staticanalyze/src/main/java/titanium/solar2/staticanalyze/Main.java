@@ -58,6 +58,7 @@ import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import mirrg.lithium.lang.HFile;
 import mirrg.lithium.lang.HLog;
+import mirrg.lithium.logging.Logger;
 import mirrg.lithium.logging.LoggerPrintStream;
 import mirrg.lithium.logging.LoggerRelay;
 import mirrg.lithium.logging.LoggerTextPane;
@@ -319,6 +320,7 @@ public class Main
 						+ "スクリプトは非nullのAnalyzerを戻り値として持たなければなりません。<br>"
 						+ "以下の組み込み変数が利用できます。<br>"
 						+ "<br>"
+						+ "・context - 外部ファイルの読み込みなどを行うオブジェクトです。<br>"
 						+ "・samplesPerSecond - フォーム上で指定されたサンプリングレートです。<br>"
 						+ "・out - 解析結果を出力するためのPrintStreamです。<br>"
 						+ "・filterExtenstion - グラフの表示などを行う拡張フィルタです。<br>"), 200, 200),
@@ -623,6 +625,25 @@ public class Main
 	private static Analyzer createAnalyzer(OutputStream out) throws Exception
 	{
 		Binding binding = new Binding();
+		binding.setVariable("context", new IAnalyzeContext() {
+			@Override
+			public String getResourceAsString(String resourceName)
+			{
+				return Main.getResourceAsString(resourceName);
+			}
+
+			@Override
+			public URL getResourceAsURL(String resourceName)
+			{
+				return Main.getResourceAsURL(resourceName);
+			}
+
+			@Override
+			public Logger getLogger()
+			{
+				return AnalyzeUtil.out;
+			}
+		});
 		binding.setVariable("samplesPerSecond", getSamplesPerSecond());
 		binding.setVariable("out", new PrintStream(out));
 		binding.setVariable("filterExtension", new FilterStaticAnalyzeGUIExtension());
@@ -634,21 +655,21 @@ public class Main
 		return (Analyzer) groovyShell.evaluate(header + System.lineSeparator() + src);
 	}
 
-	public static String getResourceAsString(String name)
+	private static String getResourceAsString(String resourceName)
 	{
 		try {
-			return new BufferedReader(new InputStreamReader(Main.class.getResourceAsStream(name), "UTF-8")).lines()
+			return new BufferedReader(new InputStreamReader(Main.class.getResourceAsStream(resourceName), "UTF-8")).lines()
 				.collect(Collectors.joining(System.lineSeparator()));
 		} catch (UnsupportedEncodingException e) {
 			AnalyzeUtil.out.error(e);
-			return new BufferedReader(new InputStreamReader(Main.class.getResourceAsStream(name))).lines()
+			return new BufferedReader(new InputStreamReader(Main.class.getResourceAsStream(resourceName))).lines()
 				.collect(Collectors.joining(System.lineSeparator()));
 		}
 	}
 
-	public static URL getResourceAsURL(String name)
+	private static URL getResourceAsURL(String resourceName)
 	{
-		return Main.class.getResource(name);
+		return Main.class.getResource(resourceName);
 	}
 
 	private static class FilterStaticAnalyzeGUIExtension implements IFilter

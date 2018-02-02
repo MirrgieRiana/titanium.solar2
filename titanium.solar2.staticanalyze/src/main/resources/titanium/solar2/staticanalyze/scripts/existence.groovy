@@ -1,6 +1,6 @@
 // 存在検知を行う解析アルゴリズム
 
-double[] waveform = WaveformUtils.normalize(WaveformUtils.fromCSV(Main.getResourceAsURL("scripts/sample_waveform.csv")));
+double[] waveform = WaveformUtils.normalize(WaveformUtils.fromCSV(context.getResourceAsURL("scripts/sample_waveform.csv")));
 int waveformHotspot = 5;
 int width = 200;
 int threshold = 1900;
@@ -29,7 +29,7 @@ process(new Analyzer(), { a ->
 			@Override
 			public void postAnalyze()
 			{
-				AnalyzeUtil.out.info("Period Count: " + count);
+				context.getLogger().info("Period Count: " + count);
 			}
 		});
 	}));

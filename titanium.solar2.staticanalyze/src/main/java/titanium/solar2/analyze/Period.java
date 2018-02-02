@@ -1,4 +1,4 @@
-package titanium.solar2.staticanalyze;
+package titanium.solar2.analyze;
 
 import java.time.LocalDateTime;
 
