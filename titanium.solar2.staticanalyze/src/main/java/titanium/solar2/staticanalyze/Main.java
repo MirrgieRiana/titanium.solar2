@@ -114,6 +114,7 @@ public class Main
 
 	private static PanelWaveform panelWaveform;
 	private static JCheckBox checkBoxPaintGraph;
+	private static double xZoom;
 
 	private static JLabel labelOutput;
 	private static LoggerTextPane loggerTextPaneOutput;
@@ -171,7 +172,8 @@ public class Main
 						+ "・更新履歴欄の追加"
 						+ "<h3>0.0.3</h3>"
 						+ "・解析スクリプト入力欄でコピー・ペーストできない不具合を修正<br>"
-						+ "・ファイルのドロップ機能をインポートボタンに移動");
+						+ "・ファイルのドロップ機能をインポートボタンに移動<br>"
+						+ "・グラフのX軸方向の縮尺変更追加");
 				}))));
 		{
 			Component mainPane = createBorderPanelUp(
@@ -423,11 +425,22 @@ public class Main
 								c.setMajorTickSpacing(20);
 								c.setPaintTicks(true);
 							}),
+						process(setToolTipText(new JSlider(JSlider.VERTICAL, -100, 100, 0), "<html>"
+							+ "グラフの横方向の縮尺を変更します。<br>"
+							+ "1目盛りにつき表示の縮尺が10倍になります。"), c -> {
+								c.addChangeListener(e -> {
+									xZoom = Math.pow(10, 1.0 * c.getValue() / 20);
+								});
+								xZoom = 1;
+								c.setPreferredSize(new Dimension(32, 64));
+								c.setMajorTickSpacing(20);
+								c.setPaintTicks(true);
+							}),
 						createBorderPanelRight(
 							setToolTipText(process(panelWaveform = new PanelWaveform(), c -> {
 								c.setMinimumSize(new Dimension(0, 64));
 								c.setPreferredSize(new Dimension(200, 64));
-							}), "1ピクセルにつき100ms分のサンプルが含まれます。"),
+							}), "標準の拡大率では1ピクセルにつき100ms分のサンプルが含まれます。"),
 							setToolTipText(process(checkBoxPaintGraph = new JCheckBox(), c -> {
 								c.setSelected(true);
 							}), "ONのとき、グラフを更新します。")))),
@@ -728,7 +741,8 @@ public class Main
 
 			if (checkBoxPaintGraph.isSelected()) {
 				for (int i = 0; i < length; i++) {
-					if (samples >= getSamplesPerSecond() / 10 - 1) {
+					int samplesPerPixel = getSamplesPerSecond() / 10;
+					if (samples >= (int) (samplesPerPixel * xZoom) - 1) {
 						panelWaveform.addEntry(min, max);
 						samples = 0;
 						min = 0;
