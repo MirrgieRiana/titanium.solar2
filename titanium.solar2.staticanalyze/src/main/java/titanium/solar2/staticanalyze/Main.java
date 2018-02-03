@@ -168,7 +168,10 @@ public class Main
 						+ "・解析スクリプト入力欄にファイルをドロップするとインポートするように<br>"
 						+ "・解析スクリプトのデフォルトインポートを変更<br>"
 						+ "・解析スクリプトの組み込み変数context追加<br>"
-						+ "・更新履歴欄の追加");
+						+ "・更新履歴欄の追加"
+						+ "<h3>0.0.3</h3>"
+						+ "・解析スクリプト入力欄でコピー・ペーストできない不具合を修正<br>"
+						+ "・ファイルのドロップ機能をインポートボタンに移動");
 				}))));
 		{
 			Component mainPane = createBorderPanelUp(
@@ -261,7 +264,7 @@ public class Main
 									textAreaScript.setCaretPosition(0);
 								});
 							}),
-						setToolTipText(buttonImport = createButton("インポート", e -> {
+						setToolTipText(process(buttonImport = createButton("インポート", e -> {
 							try {
 								JFileChooser fileChooser = new JFileChooser();
 								fileChooser.setCurrentDirectory(new File(p.get(KEY_IMPORT_AND_EXPORT_CURRENT_DIRECTORY)));
@@ -275,7 +278,41 @@ public class Main
 								AnalyzeUtil.out.error(e2);
 								return;
 							}
-						}), "ファイルから解析スクリプトを読み込みます。"),
+						}), c -> {
+							c.setTransferHandler(new TransferHandler() {
+								@Override
+								public boolean canImport(TransferSupport transferSupport)
+								{
+									if (transferSupport.isDrop()) {
+										if (transferSupport.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+											return true;
+										}
+									}
+									return false;
+								}
+
+								@Override
+								public boolean importData(TransferSupport transferSupport)
+								{
+									if (canImport(transferSupport)) {
+										try {
+											@SuppressWarnings("unchecked")
+											List<File> files = (List<File>) transferSupport.getTransferable().getTransferData(DataFlavor.javaFileListFlavor);
+											if (files.size() == 1) {
+												addPreset(files.get(0).toURI().toURL().toString(), true);
+												return true;
+											}
+										} catch (Exception e) {
+											AnalyzeUtil.out.error(e);
+										}
+										return true;
+									}
+									return false;
+								}
+							});
+						}), "<html>"
+							+ "ファイルから解析スクリプトを読み込みます。<br>"
+							+ "このボタンにはファイルをドロップできます。"),
 						setToolTipText(buttonExport = createButton("エクスポート", e -> {
 							try {
 								JFileChooser fileChooser = new JFileChooser();
@@ -303,33 +340,6 @@ public class Main
 						c.setAnimateBracketMatching(false);
 						c.setBackground(Color.decode("#ffffee"));
 						c.setTabSize(4);
-						c.setTransferHandler(new TransferHandler() {
-							@Override
-							public boolean canImport(TransferSupport transferSupport)
-							{
-								if (!transferSupport.isDrop()) return false;
-								if (!transferSupport.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) return false;
-								return true;
-							}
-
-							@Override
-							public boolean importData(TransferSupport transferSupport)
-							{
-								if (!canImport(transferSupport)) return false;
-
-								try {
-									@SuppressWarnings("unchecked")
-									List<File> files = (List<File>) transferSupport.getTransferable().getTransferData(DataFlavor.javaFileListFlavor);
-									if (files.size() == 1) {
-										addPreset(files.get(0).toURI().toURL().toString(), true);
-										return true;
-									}
-								} catch (Exception e) {
-									AnalyzeUtil.out.error(e);
-								}
-								return true;
-							}
-						});
 					}), "<html>"
 						+ "解析スクリプトの入力欄です。Groovyスクリプトとして実行されます。<br>"
 						+ "スクリプトは非nullのAnalyzerを戻り値として持たなければなりません。<br>"
@@ -340,7 +350,7 @@ public class Main
 						+ "・out - 解析結果を出力するためのPrintStreamです。<br>"
 						+ "・filterExtenstion - グラフの表示などを行う拡張フィルタです。<br>"
 						+ "<br>"
-						+ "この入力欄にはファイルをロドップできます。"), 200, 200),
+						+ "この入力欄の上側のインポートボタンにはファイルをロドップできます。"), 200, 200),
 					createBorderPanelLeft(
 						setToolTipText(buttonValidate = createButton("スクリプトの検証", e -> {
 							Analyzer analyzer;
