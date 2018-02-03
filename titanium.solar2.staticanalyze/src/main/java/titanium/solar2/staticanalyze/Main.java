@@ -742,7 +742,7 @@ public class Main
 			if (checkBoxPaintGraph.isSelected()) {
 				for (int i = 0; i < length; i++) {
 					int samplesPerPixel = getSamplesPerSecond() / 10;
-					if (samples >= (int) (samplesPerPixel * xZoom) - 1) {
+					if (samples >= (int) (samplesPerPixel / xZoom) - 1) {
 						panelWaveform.addEntry(min, max);
 						samples = 0;
 						min = 0;
