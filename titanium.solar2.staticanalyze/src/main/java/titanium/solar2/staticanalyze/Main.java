@@ -190,7 +190,7 @@ public class Main
 							+ "<br>"
 							+ "datファイルはZIPファイルの中に存在しても構いません。<br>"
 							+ "datファイルを含むZIPファイルは名称が「.zip」で終わらなければなりません。<br>"
-							+ "ZIPファイル内のファイルに対しては再帰的に探索されません。"), c -> {
+							+ "ZIPファイル内のZIPファイルに対しては再帰的に探索されません。"), c -> {
 								c.setText(p.get(KEY_SEARCH_DIRECTORY_PATH));
 								c.addFocusListener(new FocusAdapter() {
 									@Override
