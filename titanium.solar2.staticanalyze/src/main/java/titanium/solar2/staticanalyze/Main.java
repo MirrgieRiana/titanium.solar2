@@ -181,12 +181,13 @@ public class Main
 							+ "<br>"
 							+ "datファイルの名称は、例えば「00000-20170101-000000-000.dat」のように<br>"
 							+ "正規表現「\\d{5}-(.*)\\.dat」にマッチしなければなりません。<br>"
-							+ "datファイルの名称の中央部は次のいずれかパターンで示される時刻でなければなりません。<br>"
+							+ "datファイルの名称の中央部は次のいずれかのパターンで示される時刻でなければなりません。<br>"
 							+ "・uuuuMMdd-HHmmss<br>"
 							+ "・uuuuMMdd-HHmmss-SSS<br>"
 							+ "<br>"
 							+ "datファイルはZIPファイルの中に存在しても構いません。<br>"
-							+ "datファイルを含むことができるZIPファイルは名称が「.zip」で終わらなければなりません。"), c -> {
+							+ "datファイルを含むZIPファイルは名称が「.zip」で終わらなければなりません。<br>"
+							+ "ZIPファイル内のファイルに対しては再帰的に探索されません。"), c -> {
 								c.setText(p.get(KEY_SEARCH_DIRECTORY_PATH));
 								c.addFocusListener(new FocusAdapter() {
 									@Override
@@ -330,7 +331,7 @@ public class Main
 							}
 						});
 					}), "<html>"
-						+ "解析スクリプトです。Groovyとして構文解析されます。<br>"
+						+ "解析スクリプトの入力欄です。Groovyスクリプトとして実行されます。<br>"
 						+ "スクリプトは非nullのAnalyzerを戻り値として持たなければなりません。<br>"
 						+ "以下の組み込み変数が利用できます。<br>"
 						+ "<br>"
