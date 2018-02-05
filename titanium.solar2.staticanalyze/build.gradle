@@ -46,7 +46,7 @@ dependencies {
 
 	compile group: 'mirrg.lithium', name: 'mirrg.lithium.lang', version: '1.2+'
 	compile group: 'mirrg.lithium', name: 'mirrg.lithium.swing.util', version: '1.3+'
-	compile group: 'mirrg.lithium', name: 'mirrg.lithium.logging', version: '3.2+'
+	compile group: 'mirrg.lithium', name: 'mirrg.lithium.logging', version: '3.3+'
 
 	compile group: 'titanium.solar2', name: 'titanium.solar2.libs.analyze', version: '6.0+'
 	//compile group: 'titanium.solar2', name: 'titanium.solar2.libs.record', version: '1.0+'
