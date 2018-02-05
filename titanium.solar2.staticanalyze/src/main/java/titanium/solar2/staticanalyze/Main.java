@@ -38,8 +38,8 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import javax.swing.DefaultComboBoxModel;
 import javax.imageio.ImageIO;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -194,7 +194,10 @@ public class Main
 						+ "<h3>0.0.3</h3>"
 						+ "・解析スクリプト入力欄でコピー・ペーストできない不具合を修正<br>"
 						+ "・ファイルのドロップ機能をインポートボタンに移動<br>"
-						+ "・グラフのX軸方向の縮尺変更追加");
+						+ "・グラフのX軸方向の縮尺変更追加<br>"
+						+ "・タスクトレイアイコン追加<br>"
+						+ "・処理完了時、ウィンドウにフォーカスがなければ通知を表示<br>"
+						+ "・現在処理中のファイルとエントリーをウィンドウ上に表示");
 				}))));
 		{
 			Component mainPane = createBorderPanelUp(
