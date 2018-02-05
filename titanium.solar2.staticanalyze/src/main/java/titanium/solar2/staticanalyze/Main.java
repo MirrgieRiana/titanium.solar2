@@ -2,16 +2,22 @@ package titanium.solar2.staticanalyze;
 
 import static mirrg.lithium.swing.util.HSwing.*;
 
+import java.awt.AWTException;
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Image;
+import java.awt.SystemTray;
+import java.awt.TrayIcon;
+import java.awt.TrayIcon.MessageType;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
+import java.awt.event.MouseAdapter;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
@@ -33,7 +39,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.swing.DefaultComboBoxModel;
-import javax.swing.ImageIcon;
+import javax.imageio.ImageIO;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -84,6 +90,8 @@ public class Main
 	private static LoggerRelay logger = new LoggerRelay();
 	private static String KEY_LOG_FILE = "log.file";
 
+	private static Image imageApplication;
+
 	private static JFrame frame;
 
 	private static JTextField textFieldSearchDirectory;
@@ -124,6 +132,8 @@ public class Main
 	private static LoggerTextPane loggerTextPaneOutput;
 	private static int outputLineCount;
 
+	private static TrayIcon trayIcon;
+
 	public static void main(String[] args)
 	{
 		// Swing設定
@@ -155,9 +165,16 @@ public class Main
 			throw new RuntimeException(e);
 		}
 
+		// アプリケーションイメージの取得
+		try {
+			imageApplication = ImageIO.read(Main.class.getResource("icon.png"));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+
 		// ウィンドウ生成
 		frame = new JFrame("Static Analyzer - titanium.solar2");
-		frame.setIconImage(new ImageIcon(Main.class.getResource("icon.png")).getImage());
+		frame.setIconImage(imageApplication);
 		frame.setLayout(new CardLayout());
 		frame.setJMenuBar(createJMenuBar(
 			createJMenu("ヘルプ",
@@ -477,6 +494,34 @@ public class Main
 						+ "ここには解析結果のデータとは別に実行のログが出力されます。<br>"
 						+ "すべてのログを見るにはログファイルを参照してください。"), 200, 100))));
 		}
+		{
+			frame.addWindowListener(new WindowAdapter() {
+				@Override
+				public void windowOpened(WindowEvent e)
+				{
+					trayIcon = new TrayIcon(imageApplication, "Static Analyzer - titanium.solar2");
+					trayIcon.setImageAutoSize(true);
+					trayIcon.addMouseListener(new MouseAdapter() {
+						@Override
+						public void mouseClicked(java.awt.event.MouseEvent e)
+						{
+							frame.toFront();
+						};
+					});
+					try {
+						SystemTray.getSystemTray().add(trayIcon);
+					} catch (AWTException e1) {
+						AnalyzeUtil.out.error(e1);
+					}
+				}
+
+				@Override
+				public void windowClosed(WindowEvent e)
+				{
+					SystemTray.getSystemTray().remove(trayIcon);
+				}
+			});
+		}
 		frame.pack();
 		frame.setSize(500, frame.getSize().height);
 		frame.setLocationByPlatform(true);
@@ -641,6 +686,10 @@ public class Main
 						textFieldSamplesPerSecond.setEnabled(true);
 						buttonAnalyze.setEnabled(true);
 						buttonInterrupt.setEnabled(false);
+
+						if (!frame.isActive()) {
+							trayIcon.displayMessage("解析完了", "解析が完了しました。", MessageType.INFO);
+						}
 					}
 				}
 			});
