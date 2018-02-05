@@ -112,7 +112,9 @@ public class Main
 	private static JLabel labelAnalyzeTime;
 	private static JLabel labelChunkTime;
 	private static JProgressBar progressBarFiles;
+	private static JLabel labelFile;
 	private static JProgressBar progressBarEntries;
+	private static JLabel labelEntry;
 
 	private static PanelWaveform panelWaveform;
 	private static JCheckBox checkBoxPaintGraph;
@@ -407,12 +409,14 @@ public class Main
 						c.setStringPainted(true);
 						c.setFont(new Font(Font.MONOSPACED, Font.PLAIN, c.getFont().getSize()));
 					}),
+					labelFile = new JLabel("..."),
 					process(progressBarEntries = new JProgressBar(), c -> {
 						c.setValue(0);
 						c.setString("...");
 						c.setStringPainted(true);
 						c.setFont(new Font(Font.MONOSPACED, Font.PLAIN, c.getFont().getSize()));
-					})));
+					}),
+					labelEntry = new JLabel("...")));
 			frame.add(createSplitPaneVertical(0,
 				createSplitPaneVertical(1,
 					createMargin(4, mainPane),
@@ -781,11 +785,13 @@ public class Main
 							progressBarFiles.setMinimum(0);
 							progressBarFiles.setMaximum(fileCount);
 							progressBarFiles.setString("ファイル " + fileIndex + " / " + fileCount);
+							labelFile.setText("" + file);
 
 							progressBarEntries.setValue(0);
 							progressBarEntries.setMinimum(0);
 							progressBarEntries.setMaximum(0);
 							progressBarEntries.setString("エントリー " + 0 + " / " + 0);
+							labelEntry.setText("...");
 						});
 
 						AnalyzeUtil.out.info(String.format("File Accepted: [%s] %s",
@@ -801,6 +807,7 @@ public class Main
 							progressBarEntries.setMinimum(0);
 							progressBarEntries.setMaximum(entryCount);
 							progressBarEntries.setString("エントリー " + entryIndex + " / " + entryCount);
+							labelEntry.setText(entryName);
 						});
 
 						AnalyzeUtil.out.info("Entry Accepted: " + entryName);
@@ -830,6 +837,7 @@ public class Main
 							progressBarEntries.setMinimum(0);
 							progressBarEntries.setMaximum(entryCount);
 							progressBarEntries.setString("エントリー " + entryIndex + " / " + entryCount);
+							labelEntry.setText(entryName);
 						});
 
 						AnalyzeUtil.out.debug("Entry Ignored: " + entryName);
@@ -843,11 +851,13 @@ public class Main
 							progressBarFiles.setMinimum(0);
 							progressBarFiles.setMaximum(fileCount);
 							progressBarFiles.setString("ファイル " + fileIndex + " / " + fileCount);
+							labelFile.setText("" + file);
 
 							progressBarEntries.setValue(0);
 							progressBarEntries.setMinimum(0);
 							progressBarEntries.setMaximum(0);
 							progressBarEntries.setString("エントリー " + 0 + " / " + 0);
+							labelEntry.setText("...");
 						});
 
 						AnalyzeUtil.out.debug("File Ignored: " + file.getAbsolutePath());
