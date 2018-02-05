@@ -1,4 +1,4 @@
-package titanium.solar2.libs.analyze.renderer;
+package titanium.solar2.analyze.renderers;
 
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;

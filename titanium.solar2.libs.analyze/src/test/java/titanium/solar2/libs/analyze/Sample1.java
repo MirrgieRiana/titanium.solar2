@@ -14,7 +14,7 @@ import titanium.solar2.analyze.listeners.FilterMul;
 import titanium.solar2.analyze.listeners.FilterQOM;
 import titanium.solar2.analyze.listeners.PacketDetectorPulseLink;
 import titanium.solar2.analyze.listeners.PulseDetectorThresholdHighest;
-import titanium.solar2.libs.analyze.renderer.PacketRenderer;
+import titanium.solar2.analyze.renderers.PacketRenderer;
 import titanium.solar2.libs.analyze.util.AnalyzerBuilder;
 import titanium.solar2.libs.analyze.util.DetectorBuilder;
 import titanium.solar2.libs.analyze.util.WaveformUtils;

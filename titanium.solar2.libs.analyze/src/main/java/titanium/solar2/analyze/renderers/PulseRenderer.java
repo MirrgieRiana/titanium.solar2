@@ -1,4 +1,4 @@
-package titanium.solar2.libs.analyze.renderer;
+package titanium.solar2.analyze.renderers;
 
 import titanium.solar2.analyze.Pulse;
 
