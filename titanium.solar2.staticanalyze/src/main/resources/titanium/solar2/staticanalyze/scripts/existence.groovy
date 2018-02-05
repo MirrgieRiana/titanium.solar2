@@ -19,9 +19,7 @@ process(new Analyzer(), { a ->
 			public void onItem(Period period)
 			{
 				if (minLength <= period.getLength() && period.getLength() <= maxLength) {
-					out.println(String.format("%s\t%d",
-						TimeRendererSimple.INSTANCE.format(TimeUtil.getTime(period.chunkTime, period.xInChunkBegin, samplesPerSecond)),
-						period.getLength()));
+					out.println(PeriodRenderer.toString(period, TimeRendererSimple.INSTANCE, samplesPerSecond));
 					count++;
 				}
 			}
