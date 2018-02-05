@@ -84,6 +84,8 @@ public class Main
 	private static LoggerRelay logger = new LoggerRelay();
 	private static String KEY_LOG_FILE = "log.file";
 
+	private static JFrame frame;
+
 	private static JTextField textFieldSearchDirectory;
 	private static String KEY_SEARCH_DIRECTORY_PATH = "searchDirectory.path";
 	private static JButton buttonSearchDirectory;
@@ -152,7 +154,7 @@ public class Main
 		}
 
 		// ウィンドウ生成
-		JFrame frame = new JFrame("Static Analyzer - titanium.solar2");
+		frame = new JFrame("Static Analyzer - titanium.solar2");
 		frame.setIconImage(new ImageIcon(Main.class.getResource("icon.png")).getImage());
 		frame.setLayout(new CardLayout());
 		frame.setJMenuBar(createJMenuBar(
