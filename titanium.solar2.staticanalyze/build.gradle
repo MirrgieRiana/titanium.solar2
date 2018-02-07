@@ -7,7 +7,7 @@ apply plugin: 'application'
 
 project.group = 'titanium.solar2'
 project.archivesBaseName = 'titanium.solar2.staticanalyze'
-version = '0.0.2'
+version = '0.0.3'
 def mainClass = 'titanium.solar2.staticanalyze.Main'
 
 // テンプレート
