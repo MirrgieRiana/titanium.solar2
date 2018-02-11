@@ -6,7 +6,7 @@ import titanium.solar2.libs.analyze.util.*
 import titanium.solar2.libs.time.*
 import titanium.solar2.libs.time.timerenderers.*
 
-def process(a, b) {
-	b(a);
-	a
+def detector(d, c) {
+	c d
+	d
 }
