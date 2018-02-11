@@ -1,14 +1,14 @@
 // 従来手法の解析アルゴリズム
 import titanium.solar2.libs.util.CRCUtil;
 
-double[] waveform = WaveformUtils.normalize(WaveformUtils.fromCSV(context.getResourceAsURL("scripts/sample_waveform.csv")));
+double[] waveform = WaveformUtils.normalize(WaveformUtils.fromCSV(context.getResourceAsURL("sample_waveform.csv")));
 int waveformHotspot = 5;
 int threshold = 21;
 
-process(new Analyzer(), { a ->
+detector(new Analyzer(), { a ->
 	a.addListener(filterExtension);
-	a.addListener(process(new PulseDetectorThresholdUp(threshold, 100), { p ->
-		p.addListener(process(new PacketDetectorTraditional(60, 100), { p2 ->
+	a.addListener(detector(new PulseDetectorThresholdUp(threshold, 100), { p ->
+		p.addListener(detector(new PacketDetectorTraditional(60, 100), { p2 ->
 			p2.addListener(new IItemListener<Packet>() {
 				private int count = 0;
 
@@ -33,7 +33,7 @@ process(new Analyzer(), { a ->
 				@Override
 				public void postAnalyze()
 				{
-					context.getLogger().info("Packet Count: " + count);
+					logger.info("Packet Count: " + count);
 				}
 			});
 		}));

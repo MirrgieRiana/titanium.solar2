@@ -2,21 +2,30 @@
 import java.time.LocalDateTime
 import mirrg.lithium.struct.Struct1
 
-//このスクリプトでは以下のパッケージが暗黙にインポートされます。
-//import titanium.solar2.analyze.*
-//import titanium.solar2.analyze.listeners.*
-//import titanium.solar2.libs.analyze.*
-//import titanium.solar2.libs.analyze.util.*
-//import titanium.solar2.libs.time.*
-//import titanium.solar2.libs.time.timerenderers.*
+// このスクリプトでは以下のパッケージが暗黙にインポートされます。
+// import titanium.solar2.analyze.*
+// import titanium.solar2.analyze.listeners.*
+// import titanium.solar2.analyze.renderers.*
+// import titanium.solar2.libs.analyze.*
+// import titanium.solar2.libs.analyze.util.*
+// import titanium.solar2.libs.time.*
+// import titanium.solar2.libs.time.timerenderers.*
+
+// context.getResourceAsURLでファイルを取得できます。
+// 解析スクリプトファイルからの相対パスで指定します。
+double[] waveform = WaveformUtils.normalize(WaveformUtils.fromCSV(context.getResourceAsURL("sample_waveform.csv")));
+int waveformHotspot = 5;
 
 // processは第一引数を返すメソッドです。
 // 第一引数のオブジェクトを第二引数のクロージャに対して与えて実行します。
-process(new Analyzer(), { a ->
+detector(new Analyzer(), { a ->
 
 	// グラフの表示やGUIの画面更新などを行います。
 	// CUIで動作する場合、このフィルタは何も行いません。
 	a.addListener(filterExtension);
+
+	// 相関関数を得るフィルタです。
+	a.addListener(new FilterCorrelation(waveform, waveformHotspot))
 
 	// 匿名クラスによりフィルタを自作することができます。
 	// ただし、Groovyによる各サンプルへの演算は低速なため非推奨です。
@@ -29,7 +38,7 @@ process(new Analyzer(), { a ->
 		public void preAnalyze()
 		{
 			// 解析結果とは別にログ出力を行います。
-			context.getLogger().info("Start");
+			logger.info("Start");
 		}
 
 		/**
@@ -98,7 +107,7 @@ process(new Analyzer(), { a ->
 		@Override
 		public void postAnalyze()
 		{
-			context.getLogger().info("Finish");
+			logger.info("Finish");
 		}
 
 	});

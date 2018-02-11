@@ -20,15 +20,12 @@ import java.awt.event.FocusEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -36,7 +33,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import javax.imageio.ImageIO;
 import javax.swing.DefaultComboBoxModel;
@@ -63,11 +59,8 @@ import org.fife.ui.rsyntaxtextarea.RSyntaxDocument;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 
-import groovy.lang.Binding;
-import groovy.lang.GroovyShell;
 import mirrg.lithium.lang.HFile;
 import mirrg.lithium.lang.HLog;
-import mirrg.lithium.logging.Logger;
 import mirrg.lithium.logging.LoggerPrintStream;
 import mirrg.lithium.logging.LoggerRelay;
 import mirrg.lithium.logging.LoggerTextPane;
@@ -75,6 +68,7 @@ import mirrg.lithium.logging.OutputStreamLogging;
 import mirrg.lithium.struct.Struct1;
 import mirrg.lithium.swing.util.HSwing;
 import titanium.solar2.libs.analyze.Analyzer;
+import titanium.solar2.libs.analyze.AnalyzerFactory;
 import titanium.solar2.libs.analyze.IFilter;
 import titanium.solar2.staticanalyze.util.AnalyzeUtil;
 import titanium.solar2.staticanalyze.util.DatEntryNameParserOr;
@@ -85,10 +79,11 @@ import titanium.solar2.staticanalyze.util.IVisitDataListener;
 public class Main
 {
 
+	private static ResourceProviderFactory resourceProviderFactory = new ResourceProviderFactory(Main.class);
+
 	private static FiledProperties p;
 
-	private static LoggerRelay logger = new LoggerRelay();
-	private static String KEY_LOG_FILE = "log.file";
+	private static final String KEY_LOG_FILE = "log.file";
 
 	private static Image imageApplication;
 
@@ -104,6 +99,12 @@ public class Main
 	private static JButton buttonSaveFile;
 	private static String KEY_SAVE_FILE_CURRENT_DIRECTORY = "saveFile.currentDirectory";
 
+	private static final String[] resourceNamesPreset = {
+		"assets://scripts/default.groovy",
+		"assets://scripts/existence.groovy",
+		"assets://scripts/pulseLink.groovy",
+		"assets://scripts/traditional.groovy",
+	};
 	private static JComboBox<String> comboBoxPresets;
 	private static JButton buttonImport;
 	private static JButton buttonExport;
@@ -148,15 +149,14 @@ public class Main
 			.setDefault(KEY_SAVE_FILE_CURRENT_DIRECTORY, ".")
 			.setDefault(KEY_LOG_FILE, "./staticanalyze.log.txt")
 			.setDefault(KEY_IMPORT_AND_EXPORT_CURRENT_DIRECTORY, ".")
-			.setDefault(KEY_PRESETS, ""
-				+ "resource://scripts/default.groovy" + ";"
-				+ "resource://scripts/existence.groovy" + ";"
-				+ "resource://scripts/pulseLink.groovy" + ";"
-				+ "resource://scripts/traditional.groovy");
+			.setDefault(KEY_PRESETS, "");
 		p.init();
 
 		// ロガー設定
+		LoggerRelay logger = new LoggerRelay();
 		AnalyzeUtil.out = logger;
+
+		// ロガー登録
 		logger.addLogger(new LoggerPrintStream(System.out));
 		try {
 			PrintStream out = new PrintStream(new FileOutputStream(new File(p.get(KEY_LOG_FILE))));
@@ -188,7 +188,7 @@ public class Main
 						+ "<h3>0.0.2</h3>"
 						+ "・解析スクリプト入力欄を豪華（RSyntaxTextArea）に<br>"
 						+ "・解析スクリプト入力欄にファイルをドロップするとインポートするように<br>"
-						+ "・解析スクリプトのデフォルトインポートを変更<br>"
+						+ "・<b>【破壊的】解析スクリプトのデフォルトインポートを変更</b><br>"
 						+ "・解析スクリプトの組み込み変数context追加<br>"
 						+ "・更新履歴欄の追加"
 						+ "<h3>0.0.3</h3>"
@@ -199,7 +199,15 @@ public class Main
 						+ "・処理完了時、ウィンドウにフォーカスがなければ通知を表示<br>"
 						+ "・現在処理中のファイルとエントリーをウィンドウ上に表示<br>"
 						+ "・ログ出力欄の最下部に空行が表示されないように<br>"
-						+ "・解析スクリプトでrendererをデフォルトインポート");
+						+ "・解析スクリプトでrendererをデフォルトインポート"
+						+ "<h3>0.0.4</h3>"
+						+ "・<b>【破壊的】解析スクリプトでprocessをdetectorに変更</b><br>"
+						+ "・<b>【破壊的】解析スクリプトでcontext.getLogger()をloggerに変更</b><br>"
+						+ "・<b>【破壊的】解析スクリプトでのリソースの指定をスクリプトファイルからの相対参照に変更</b><br>"
+						+ "・<b>【破壊的】ビルトインスクリプトファイルの参照文字列の変更</b><br>"
+						+ "・<b>【破壊的】プリセットをpropertiesではなく内部的に与えるように変更</b><br>"
+						+ "　・propertiesの初期化が必要"
+						+ "");
 				}))));
 		{
 			Component mainPane = createBorderPanelUp(
@@ -281,7 +289,7 @@ public class Main
 
 									String source;
 									try {
-										source = loadPreset(preset);
+										source = resourceProviderFactory.getResourceProvider(new File(".").toURI().toURL()).getResourceAsString(preset);
 									} catch (Exception e2) {
 										AnalyzeUtil.out.error("Failed to load preset: " + preset);
 										AnalyzeUtil.out.error(e2);
@@ -374,6 +382,14 @@ public class Main
 						+ "以下の組み込み変数が利用できます。<br>"
 						+ "<br>"
 						+ "・context - 外部ファイルの読み込みなどを行うオブジェクトです。<br>"
+						+ "　・context.getResourceAsURL(リソース名) - リソースをURLで取得します。<br>"
+						+ "　　・存在しない場合は例外になります。<br>"
+						+ "　　・リソース名の指定方法<br>"
+						+ "　　　・「assets://」で始まる場合：ビルトインのファイルを参照<br>"
+						+ "　　　・「プロトコル://」で始まる場合：URLとして解釈<br>"
+						+ "　　　・それ以外の場合：スクリプトファイルからの相対参照<br>"
+						+ "　・context.getResourceAsString(リソース名) - リソースを文字列で取得します。<br>"
+						+ "・logger - ログ出力のためのオブジェクトです。<br>"
 						+ "・samplesPerSecond - フォーム上で指定されたサンプリングレートです。<br>"
 						+ "・out - 解析結果を出力するためのPrintStreamです。<br>"
 						+ "・filterExtenstion - グラフの表示などを行う拡張フィルタです。<br>"
@@ -383,13 +399,7 @@ public class Main
 						setToolTipText(buttonValidate = createButton("スクリプトの検証", e -> {
 							Analyzer analyzer;
 							try {
-								analyzer = createAnalyzer(new OutputStream() {
-									@Override
-									public void write(int b) throws IOException
-									{
-
-						}
-								});
+								analyzer = createAnalyzer(new OutputStreamLogging(AnalyzeUtil.out));
 							} catch (Exception e2) {
 								AnalyzeUtil.out.info(e2);
 								return;
@@ -571,19 +581,12 @@ public class Main
 		}
 	}
 
-	private static String loadPreset(String preset) throws Exception
-	{
-		if (preset.startsWith("resource://")) {
-			return getResourceAsString(preset.substring("resource://".length()));
-		} else {
-			return new BufferedReader(new InputStreamReader(new URL(preset).openStream())).lines()
-				.collect(Collectors.joining(System.lineSeparator()));
-		}
-	}
-
 	private static void updatePresets()
 	{
 		comboBoxPresets.removeAllItems();
+		for (String resourceName : resourceNamesPreset) {
+			comboBoxPresets.addItem(resourceName);
+		}
 		for (String string : p.get(KEY_PRESETS).split(";")) {
 			comboBoxPresets.addItem(string);
 		}
@@ -592,6 +595,11 @@ public class Main
 	private static int getSamplesPerSecond()
 	{
 		return ((Number) textFieldSamplesPerSecond.getValue()).intValue();
+	}
+
+	private static URL getBaseURL() throws IOException
+	{
+		return resourceProviderFactory.getResourceProvider(new File(".").toURI().toURL()).getResourceAsURL(comboBoxPresets.getItemAt(comboBoxPresets.getSelectedIndex()));
 	}
 
 	private static String format(LocalDateTime time)
@@ -723,52 +731,13 @@ public class Main
 
 	private static Analyzer createAnalyzer(OutputStream out) throws Exception
 	{
-		Binding binding = new Binding();
-		binding.setVariable("context", new IAnalyzeContext() {
-			@Override
-			public String getResourceAsString(String resourceName)
-			{
-				return Main.getResourceAsString(resourceName);
-			}
-
-			@Override
-			public URL getResourceAsURL(String resourceName)
-			{
-				return Main.getResourceAsURL(resourceName);
-			}
-
-			@Override
-			public Logger getLogger()
-			{
-				return AnalyzeUtil.out;
-			}
-		});
-		binding.setVariable("samplesPerSecond", getSamplesPerSecond());
-		binding.setVariable("out", new PrintStream(out));
-		binding.setVariable("filterExtension", new FilterStaticAnalyzeGUIExtension());
-		GroovyShell groovyShell = new GroovyShell(binding);
-
-		String header = getResourceAsString("header.groovy");
-		String src = textAreaScript.getText();
-
-		return (Analyzer) groovyShell.evaluate(header + System.lineSeparator() + src);
-	}
-
-	private static String getResourceAsString(String resourceName)
-	{
-		try {
-			return new BufferedReader(new InputStreamReader(Main.class.getResourceAsStream(resourceName), "UTF-8")).lines()
-				.collect(Collectors.joining(System.lineSeparator()));
-		} catch (UnsupportedEncodingException e) {
-			AnalyzeUtil.out.error(e);
-			return new BufferedReader(new InputStreamReader(Main.class.getResourceAsStream(resourceName))).lines()
-				.collect(Collectors.joining(System.lineSeparator()));
-		}
-	}
-
-	private static URL getResourceAsURL(String resourceName)
-	{
-		return Main.class.getResource(resourceName);
+		return AnalyzerFactory.createAnalyzer(
+			textAreaScript.getText(),
+			resourceProviderFactory.getResourceProvider(getBaseURL()),
+			AnalyzeUtil.out,
+			getSamplesPerSecond(),
+			out,
+			new FilterStaticAnalyzeGUIExtension());
 	}
 
 	private static class FilterStaticAnalyzeGUIExtension implements IFilter

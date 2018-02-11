@@ -1,7 +1,7 @@
 // パルスリンク法解析アルゴリズム
 import titanium.solar2.libs.util.CRCUtil;
 
-double[] waveform = WaveformUtils.normalize(WaveformUtils.fromCSV(context.getResourceAsURL("scripts/sample_waveform.csv")));
+double[] waveform = WaveformUtils.normalize(WaveformUtils.fromCSV(context.getResourceAsURL("sample_waveform.csv")));
 int waveformHotspot = 5;
 int threshold = 2000;
 int firstThreshold = 3000;
@@ -9,11 +9,11 @@ int maxXOffsetError = 5;
 double maxYRatioError = 2;
 double shortRatio = 1;
 
-process(new Analyzer(), { a ->
+detector(new Analyzer(), { a ->
 	a.addListener(filterExtension);
 	a.addListener(new FilterCorrelation(waveform, waveformHotspot));
-	a.addListener(process(new PulseDetectorThresholdHighest(threshold, 100), { p ->
-		p.addListener(process(new PacketDetectorPulseLink(firstThreshold, 45, 80, 100, maxXOffsetError, maxYRatioError, shortRatio), { p2 ->
+	a.addListener(detector(new PulseDetectorThresholdHighest(threshold, 100), { p ->
+		p.addListener(detector(new PacketDetectorPulseLink(firstThreshold, 45, 80, 100, maxXOffsetError, maxYRatioError, shortRatio), { p2 ->
 			p2.addListener(new IItemListener<Packet>() {
 				private int count = 0;
 
@@ -38,7 +38,7 @@ process(new Analyzer(), { a ->
 				@Override
 				public void postAnalyze()
 				{
-					context.getLogger().info("Packet Count: " + count);
+					logger.info("Packet Count: " + count);
 				}
 			});
 		}));
