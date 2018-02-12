@@ -1,8 +1,6 @@
 // 従来手法の解析アルゴリズム
 import titanium.solar2.libs.util.CRCUtil;
 
-double[] waveform = WaveformUtils.normalize(WaveformUtils.fromCSV(context.getResourceAsURL("sample_waveform.csv")));
-int waveformHotspot = 5;
 int threshold = 21;
 
 detector(new Analyzer(), { a ->
