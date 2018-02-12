@@ -28,7 +28,6 @@ public class Test1
 
 		ArrayList<String> log = new ArrayList<>();
 		ArrayList<String> output = new ArrayList<>();
-		IResourceProvider resourceProvider = new ResourceProviderFromClass(Test1.class);
 
 		try (OutputStream out = new OutputStreamLogging(new Logger() {
 			@Override
@@ -38,8 +37,8 @@ public class Test1
 			}
 		})) {
 			Analyzer analyzer = AnalyzerFactory.createAnalyzer(
-				resourceProvider.getResourceAsString("test1.groovy"),
-				resourceProvider,
+				Test1.class,
+				Test1.class.getResource("test1.groovy"),
 				new Logger() {
 					@Override
 					public void println(String string, Optional<EnumLogLevel> oLogLevel)
