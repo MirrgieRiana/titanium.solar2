@@ -70,6 +70,10 @@ import mirrg.lithium.swing.util.HSwing;
 import titanium.solar2.libs.analyze.Analyzer;
 import titanium.solar2.libs.analyze.AnalyzerFactory;
 import titanium.solar2.libs.analyze.IFilter;
+import titanium.solar2.libs.analyze.PathResolverChDir;
+import titanium.solar2.libs.analyze.PathResolverClass;
+import titanium.solar2.libs.analyze.PathResolverURL;
+import titanium.solar2.libs.analyze.ResourceResolver;
 import titanium.solar2.staticanalyze.util.AnalyzeUtil;
 import titanium.solar2.staticanalyze.util.DatEntryNameParserOr;
 import titanium.solar2.staticanalyze.util.DatEntryNameParserSimple;
@@ -79,7 +83,10 @@ import titanium.solar2.staticanalyze.util.IVisitDataListener;
 public class Main
 {
 
-	private static ResourceProviderFactory resourceProviderFactory = new ResourceProviderFactory(Main.class);
+	private static ResourceResolver resourceResolverPreset = new ResourceResolver(new PathResolverChDir());
+	static {
+		resourceResolverPreset.registerAssets("assets", new PathResolverClass(Main.class));
+	}
 
 	private static FiledProperties p;
 
@@ -177,6 +184,11 @@ public class Main
 		frame.setIconImage(imageApplication);
 		frame.setLayout(new CardLayout());
 		frame.setJMenuBar(createJMenuBar(
+			createJMenu("設定",
+				setToolTipText(createJMenuItem("プリセットの初期化", e -> {
+					p.reset(KEY_PRESETS);
+					updatePresets();
+				}), "解析スクリプトのプリセット欄を初期化し、デフォルトの解析スクリプトを読み込みます。")),
 			createJMenu("ヘルプ",
 				createJMenuItem("ヒント", e -> {
 					JOptionPane.showMessageDialog(frame, "GUIコンポーネントにカーソルを合わせるとヒントが表示されます。");
@@ -206,7 +218,10 @@ public class Main
 						+ "・<b>【破壊的】解析スクリプトでのリソースの指定をスクリプトファイルからの相対参照に変更</b><br>"
 						+ "・<b>【破壊的】ビルトインスクリプトファイルの参照文字列の変更</b><br>"
 						+ "・<b>【破壊的】プリセットをpropertiesではなく内部的に与えるように変更</b><br>"
-						+ "　・propertiesの初期化が必要"
+						+ "　・propertiesの初期化が必要<br>"
+						+ "・<b>【破壊的】WaveformUtilsをWaveformUtilに変更</b><br>"
+						+ "・WaveformUtil.fromCSVで\"#\"によるコメントアウトが可能に<br>"
+						+ "・プリセットの初期化機能の追加"
 						+ "");
 				}))));
 		{
@@ -286,18 +301,20 @@ public class Main
 								});
 								comboBoxPresets.addActionListener(e -> {
 									String preset = comboBoxPresets.getItemAt(comboBoxPresets.getSelectedIndex());
+									if (preset != null) {
 
-									String source;
-									try {
-										source = resourceProviderFactory.getResourceProvider(new File(".").toURI().toURL()).getResourceAsString(preset);
-									} catch (Exception e2) {
-										AnalyzeUtil.out.error("Failed to load preset: " + preset);
-										AnalyzeUtil.out.error(e2);
-										return;
+										String source;
+										try {
+											source = resourceResolverPreset.getResourceAsString(preset);
+										} catch (Exception e2) {
+											AnalyzeUtil.out.error("Failed to load preset: " + preset);
+											AnalyzeUtil.out.error(e2);
+											return;
+										}
+
+										textAreaScript.setText(source);
+										textAreaScript.setCaretPosition(0);
 									}
-
-									textAreaScript.setText(source);
-									textAreaScript.setCaretPosition(0);
 								});
 							}),
 						setToolTipText(process(buttonImport = createButton("インポート", e -> {
@@ -564,17 +581,21 @@ public class Main
 
 	private static void addPreset(String preset, boolean changePreset)
 	{
-		String[] presets = p.get(KEY_PRESETS).split(";");
-		for (int i = 0; i < presets.length; i++) {
-			if (presets[i].equals(preset)) {
-				comboBoxPresets.setSelectedIndex(i);
-				return;
+		// 既存
+		{
+			String[] presets = p.get(KEY_PRESETS).split(";");
+			for (int i = 0; i < presets.length; i++) {
+				if (presets[i].equals(preset)) {
+					comboBoxPresets.setSelectedIndex(i);
+					return;
+				}
 			}
 		}
 
 		// 新規追加
-
-		p.set(KEY_PRESETS, p.get(KEY_PRESETS) + ";" + preset);
+		String presets = p.get(KEY_PRESETS);
+		if (!presets.isEmpty()) presets = presets + ";";
+		p.set(KEY_PRESETS, presets + ";" + preset);
 		comboBoxPresets.addItem(preset);
 		if (changePreset) {
 			comboBoxPresets.setSelectedIndex(comboBoxPresets.getItemCount() - 1);
@@ -597,9 +618,9 @@ public class Main
 		return ((Number) textFieldSamplesPerSecond.getValue()).intValue();
 	}
 
-	private static URL getBaseURL() throws IOException
+	private static URL getScriptURL() throws IOException
 	{
-		return resourceProviderFactory.getResourceProvider(new File(".").toURI().toURL()).getResourceAsURL(comboBoxPresets.getItemAt(comboBoxPresets.getSelectedIndex()));
+		return resourceResolverPreset.getResourceAsURL(comboBoxPresets.getItemAt(comboBoxPresets.getSelectedIndex()));
 	}
 
 	private static String format(LocalDateTime time)
@@ -731,9 +752,11 @@ public class Main
 
 	private static Analyzer createAnalyzer(OutputStream out) throws Exception
 	{
+		ResourceResolver resourceResolver = new ResourceResolver(new PathResolverURL(getScriptURL()));
+		resourceResolver.registerAssets("assets", new PathResolverClass(Main.class));
 		return AnalyzerFactory.createAnalyzer(
 			textAreaScript.getText(),
-			resourceProviderFactory.getResourceProvider(getBaseURL()),
+			resourceResolver,
 			AnalyzeUtil.out,
 			getSamplesPerSecond(),
 			out,

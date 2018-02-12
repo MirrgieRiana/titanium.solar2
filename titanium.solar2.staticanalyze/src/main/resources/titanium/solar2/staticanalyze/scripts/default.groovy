@@ -13,7 +13,7 @@ import mirrg.lithium.struct.Struct1
 
 // context.getResourceAsURLでファイルを取得できます。
 // 解析スクリプトファイルからの相対パスで指定します。
-double[] waveform = WaveformUtils.normalize(WaveformUtils.fromCSV(context.getResourceAsURL("sample_waveform.csv")));
+double[] waveform = WaveformUtil.normalize(WaveformUtil.fromCSV(context.getResourceAsURL("sample_waveform.csv")));
 int waveformHotspot = 5;
 
 // processは第一引数を返すメソッドです。

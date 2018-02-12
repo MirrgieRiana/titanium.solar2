@@ -1,6 +1,6 @@
 // 存在検知を行う解析アルゴリズム
 
-double[] waveform = WaveformUtils.normalize(WaveformUtils.fromCSV(context.getResourceAsURL("sample_waveform.csv")));
+double[] waveform = WaveformUtil.normalize(WaveformUtil.fromCSV(context.getResourceAsURL("sample_waveform.csv")));
 int waveformHotspot = 5;
 int width = 200;
 int threshold = 1900;

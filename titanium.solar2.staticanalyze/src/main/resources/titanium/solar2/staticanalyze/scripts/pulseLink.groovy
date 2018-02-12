@@ -1,7 +1,7 @@
 // パルスリンク法解析アルゴリズム
 import titanium.solar2.libs.util.CRCUtil;
 
-double[] waveform = WaveformUtils.normalize(WaveformUtils.fromCSV(context.getResourceAsURL("sample_waveform.csv")));
+double[] waveform = WaveformUtil.normalize(WaveformUtil.fromCSV(context.getResourceAsURL("sample_waveform.csv")));
 int waveformHotspot = 5;
 int threshold = 2000;
 int firstThreshold = 3000;
