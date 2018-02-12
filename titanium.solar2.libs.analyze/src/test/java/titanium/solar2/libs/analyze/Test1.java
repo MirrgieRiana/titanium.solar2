@@ -17,6 +17,7 @@ import mirrg.lithium.logging.Logger;
 import mirrg.lithium.logging.OutputStreamLogging;
 import mirrg.lithium.struct.Struct1;
 import titanium.solar2.analyze.listeners.FilterDummy;
+import titanium.solar2.libs.analyze.util.URLUtil;
 
 public class Test1
 {
@@ -37,8 +38,8 @@ public class Test1
 			}
 		})) {
 			Analyzer analyzer = AnalyzerFactory.createAnalyzer(
-				Test1.class,
-				Test1.class.getResource("test1.groovy"),
+				URLUtil.getString(Test1.class.getResource("test1.groovy")),
+				new ResourceResolver(new PathResolverURL(Test1.class.getResource("test1.groovy"))),
 				new Logger() {
 					@Override
 					public void println(String string, Optional<EnumLogLevel> oLogLevel)
