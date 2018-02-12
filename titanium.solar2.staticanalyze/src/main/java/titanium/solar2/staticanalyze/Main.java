@@ -26,7 +26,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.net.URL;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
@@ -117,6 +116,8 @@ public class Main
 	private static JButton buttonExport;
 	private static String KEY_IMPORT_AND_EXPORT_CURRENT_DIRECTORY = "importAndExport.currentDirectory";
 	private static String KEY_PRESETS = "presets";
+
+	private static JTextField textFieldScriptURL;
 
 	private static RSyntaxTextArea textAreaScript;
 
@@ -221,7 +222,8 @@ public class Main
 						+ "　・propertiesの初期化が必要<br>"
 						+ "・<b>【破壊的】WaveformUtilsをWaveformUtilに変更</b><br>"
 						+ "・WaveformUtil.fromCSVで\"#\"によるコメントアウトが可能に<br>"
-						+ "・プリセットの初期化機能の追加"
+						+ "・プリセットの初期化機能の追加<br>"
+						+ "・解析スクリプトURLの指定欄の追加"
 						+ "");
 				}))));
 		{
@@ -312,6 +314,8 @@ public class Main
 											return;
 										}
 
+										textFieldScriptURL.setText(preset);
+
 										textAreaScript.setText(source);
 										textAreaScript.setCaretPosition(0);
 									}
@@ -377,13 +381,18 @@ public class Main
 									try (PrintStream out = new PrintStream(new FileOutputStream(fileChooser.getSelectedFile()))) {
 										out.print(textAreaScript.getText());
 									}
-									addPreset(fileChooser.getSelectedFile().toURI().toURL().toString(), false);
+									String preset = fileChooser.getSelectedFile().toURI().toURL().toString();
+									addPreset(preset, false);
+									textFieldScriptURL.setText(preset);
 								}
 							} catch (Exception e2) {
 								AnalyzeUtil.out.error(e2);
 								return;
 							}
 						}), "解析スクリプトをファイルに保存します。"))),
+				createBorderPanelLeft(
+					new JLabel("解析スクリプトURL"),
+					setToolTipText(textFieldScriptURL = new JTextField(), "解析スクリプト内での相対パスの基底です。")),
 				createBorderPanelDown(
 					createScrollPane(setToolTipText(process(textAreaScript = new RSyntaxTextArea(), c -> {
 						c.setDocument(new RSyntaxDocument(SyntaxConstants.SYNTAX_STYLE_GROOVY));
@@ -618,11 +627,6 @@ public class Main
 		return ((Number) textFieldSamplesPerSecond.getValue()).intValue();
 	}
 
-	private static URL getScriptURL() throws IOException
-	{
-		return resourceResolverPreset.getResourceAsURL(comboBoxPresets.getItemAt(comboBoxPresets.getSelectedIndex()));
-	}
-
 	private static String format(LocalDateTime time)
 	{
 		return DateTimeFormatter.ofPattern("uuuu/MM/dd HH:mm:ss.SSS").format(time);
@@ -715,6 +719,7 @@ public class Main
 						comboBoxPresets.setEnabled(true);
 						buttonImport.setEnabled(true);
 						buttonExport.setEnabled(true);
+						textFieldScriptURL.setEnabled(true);
 						textAreaScript.setEnabled(true);
 						buttonValidate.setEnabled(true);
 						textFieldSamplesPerSecond.setEnabled(true);
@@ -734,6 +739,7 @@ public class Main
 			comboBoxPresets.setEnabled(false);
 			buttonImport.setEnabled(false);
 			buttonExport.setEnabled(false);
+			textFieldScriptURL.setEnabled(false);
 			textAreaScript.setEnabled(false);
 			buttonValidate.setEnabled(false);
 			textFieldSamplesPerSecond.setEnabled(false);
@@ -752,7 +758,7 @@ public class Main
 
 	private static Analyzer createAnalyzer(OutputStream out) throws Exception
 	{
-		ResourceResolver resourceResolver = new ResourceResolver(new PathResolverURL(getScriptURL()));
+		ResourceResolver resourceResolver = new ResourceResolver(new PathResolverURL(resourceResolverPreset.getResourceAsURL(textFieldScriptURL.getText())));
 		resourceResolver.registerAssets("assets", new PathResolverClass(Main.class));
 		return AnalyzerFactory.createAnalyzer(
 			textAreaScript.getText(),
