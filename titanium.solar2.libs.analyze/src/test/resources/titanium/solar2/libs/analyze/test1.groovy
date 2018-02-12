@@ -1,7 +1,7 @@
 // テスト
 detector (new Analyzer()) {
 	it.addListener filterExtension
-	it.addListener new FilterCorrelation(WaveformUtils.fromCSV(context.getResourceAsURL("waveform.csv")), 5)
+	it.addListener new FilterCorrelation(WaveformUtil.fromCSV(context.getResourceAsURL("waveform.csv")), 5)
 	it.addListener new FilterContinuous(45, 80)
 	it.addListener new FilterQOM()
 	it.addListener new FilterMul(0.02)
