@@ -36,8 +36,7 @@ public class Test1
 				output.add(string);
 			}
 		})) {
-			Analyzer analyzer = AnalyzerFactory.createAnalyzer(
-				"analyze://test1.groovy",
+			Analyzer analyzer = (Analyzer) new AnalyzerFactory(
 				new Logger() {
 					@Override
 					public void println(String string, Optional<EnumLogLevel> oLogLevel)
@@ -47,7 +46,7 @@ public class Test1
 				},
 				samplesPerSecond,
 				out,
-				new FilterDummy());
+				new FilterDummy()).eval(Test1.class.getResource("test1.groovy"));
 
 			doAnalyze(analyzer, samplesPerSecond);
 
