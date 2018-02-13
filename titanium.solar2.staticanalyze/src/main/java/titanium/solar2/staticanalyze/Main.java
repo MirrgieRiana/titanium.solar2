@@ -58,6 +58,7 @@ import org.fife.ui.rsyntaxtextarea.RSyntaxDocument;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 
+import mirrg.lithium.groovy.properties.URLUtil;
 import mirrg.lithium.lang.HFile;
 import mirrg.lithium.lang.HLog;
 import mirrg.lithium.logging.LoggerPrintStream;
@@ -67,12 +68,7 @@ import mirrg.lithium.logging.OutputStreamLogging;
 import mirrg.lithium.struct.Struct1;
 import mirrg.lithium.swing.util.HSwing;
 import titanium.solar2.libs.analyze.Analyzer;
-import titanium.solar2.libs.analyze.AnalyzerFactory;
 import titanium.solar2.libs.analyze.IFilter;
-import titanium.solar2.libs.analyze.PathResolverChDir;
-import titanium.solar2.libs.analyze.PathResolverClass;
-import titanium.solar2.libs.analyze.PathResolverURL;
-import titanium.solar2.libs.analyze.ResourceResolver;
 import titanium.solar2.staticanalyze.util.AnalyzeUtil;
 import titanium.solar2.staticanalyze.util.DatEntryNameParserOr;
 import titanium.solar2.staticanalyze.util.DatEntryNameParserSimple;
@@ -81,11 +77,6 @@ import titanium.solar2.staticanalyze.util.IVisitDataListener;
 
 public class Main
 {
-
-	private static ResourceResolver resourceResolverPreset = new ResourceResolver(new PathResolverChDir());
-	static {
-		resourceResolverPreset.registerAssets("assets", new PathResolverClass(Main.class));
-	}
 
 	private static FiledProperties p;
 
@@ -106,10 +97,10 @@ public class Main
 	private static String KEY_SAVE_FILE_CURRENT_DIRECTORY = "saveFile.currentDirectory";
 
 	private static final String[] resourceNamesPreset = {
-		"assets://scripts/default.groovy",
-		"assets://scripts/existence.groovy",
-		"assets://scripts/pulseLink.groovy",
-		"assets://scripts/traditional.groovy",
+		"staticanalyze://scripts/default.groovy",
+		"staticanalyze://scripts/existence.groovy",
+		"staticanalyze://scripts/pulseLink.groovy",
+		"staticanalyze://scripts/traditional.groovy",
 	};
 	private static JComboBox<String> comboBoxPresets;
 	private static JButton buttonImport;
@@ -222,7 +213,8 @@ public class Main
 						+ "　・propertiesの初期化が必要<br>"
 						+ "・<b>【破壊的】WaveformUtilsをWaveformUtilに変更</b><br>"
 						+ "・WaveformUtil.fromCSVで\"#\"によるコメントアウトが可能に<br>"
-						+ "・プリセットの初期化機能の追加<br>"
+						+ "・プリセットのプロトコル名変更<br>"
+						+ "・解析スクリプト履歴の初期化機能の追加<br>"
 						+ "・解析スクリプトURLの指定欄の追加"
 						+ "");
 				}))));
@@ -307,7 +299,7 @@ public class Main
 
 										String source;
 										try {
-											source = resourceResolverPreset.getResourceAsString(preset);
+											source = URLUtil.getString(AnalyzerFactoryStatic.RESOURCE_RESOLVER.getResource(preset));
 										} catch (Exception e2) {
 											AnalyzeUtil.out.error("Failed to load preset: " + preset);
 											AnalyzeUtil.out.error(e2);
@@ -758,11 +750,9 @@ public class Main
 
 	private static Analyzer createAnalyzer(OutputStream out) throws Exception
 	{
-		ResourceResolver resourceResolver = new ResourceResolver(new PathResolverURL(resourceResolverPreset.getResourceAsURL(textFieldScriptURL.getText())));
-		resourceResolver.registerAssets("assets", new PathResolverClass(Main.class));
-		return AnalyzerFactory.createAnalyzer(
+		return AnalyzerFactoryStatic.createAnalyzer(
 			textAreaScript.getText(),
-			resourceResolver,
+			AnalyzerFactoryStatic.RESOURCE_RESOLVER.getResource(textFieldScriptURL.getText()),
 			AnalyzeUtil.out,
 			getSamplesPerSecond(),
 			out,
