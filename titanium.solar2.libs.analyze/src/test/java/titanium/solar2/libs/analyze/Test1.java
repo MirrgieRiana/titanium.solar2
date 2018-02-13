@@ -37,6 +37,7 @@ public class Test1
 			}
 		})) {
 			Analyzer analyzer = (Analyzer) new AnalyzerFactory(
+				AnalyzerFactory.RESOURCE_RESOLVER,
 				new Logger() {
 					@Override
 					public void println(String string, Optional<EnumLogLevel> oLogLevel)
