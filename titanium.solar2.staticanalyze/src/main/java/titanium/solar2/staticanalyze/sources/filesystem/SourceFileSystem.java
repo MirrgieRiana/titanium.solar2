@@ -110,20 +110,20 @@ public class SourceFileSystem implements ISource
 							textFieldSearchDirectory.setText(fileChooser.getSelectedFile().getAbsolutePath());
 						}
 					}))),
-			process(progressBarFiles = new JProgressBar(), c -> {
+			setToolTipText(process(progressBarFiles = new JProgressBar(), c -> {
 				c.setValue(0);
 				c.setString("...");
 				c.setStringPainted(true);
 				c.setFont(new Font(Font.MONOSPACED, Font.PLAIN, c.getFont().getSize()));
-			}),
-			labelFile = new JLabel("..."),
-			process(progressBarEntries = new JProgressBar(), c -> {
+			}), "全体の中での処理済みのファイルの数です。"),
+			setToolTipText(labelFile = new JLabel("..."), "現在処理中のファイルです。"),
+			setToolTipText(process(progressBarEntries = new JProgressBar(), c -> {
 				c.setValue(0);
 				c.setString("...");
 				c.setStringPainted(true);
 				c.setFont(new Font(Font.MONOSPACED, Font.PLAIN, c.getFont().getSize()));
-			}),
-			labelEntry = new JLabel("..."),
+			}), "ZIPファイルの中での処理済みのエントリーの数です。"),
+			setToolTipText(labelEntry = new JLabel("..."), "現在処理中のエントリーです。"),
 			null);
 	}
 

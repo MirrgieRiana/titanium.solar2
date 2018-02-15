@@ -206,15 +206,18 @@ public class Main
 						+ "・解析スクリプト履歴の初期化機能の追加<br>"
 						+ "・解析スクリプトURLの指定欄の追加"
 						+ "・データソースをタブ化"
+						+ "・録音データソースの追加"
 						+ "");
 				}))));
 		{
 			Component mainPane = createBorderPanelUp(
-				process(tabbedPaneSource = new JTabbedPane(), c -> {
+				setToolTipText(process(tabbedPaneSource = new JTabbedPane(), c -> {
 					for (ISource source : sources) {
 						c.addTab(source.getTabTitle(), new ContainerSource(source, frame));
 					}
-				}),
+				}), "<html>"
+					+ "データソースです。<br>"
+					+ "現在タブで表示されているデータソースが使われます。"),
 				createBorderPanelLeft(
 					new JLabel("出力ファイル"),
 					createBorderPanelRight(

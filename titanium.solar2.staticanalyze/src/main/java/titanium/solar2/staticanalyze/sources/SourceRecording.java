@@ -49,7 +49,7 @@ public class SourceRecording implements ISource
 	{
 		return createBorderPanelUp(
 			new JLabel("44100Hz, 1ch, 8bit"),
-			labelChunk = new JLabel("..."),
+			setToolTipText(labelChunk = new JLabel("..."), "現在のチャンクの開始時刻です。"),
 			null);
 	}
 
