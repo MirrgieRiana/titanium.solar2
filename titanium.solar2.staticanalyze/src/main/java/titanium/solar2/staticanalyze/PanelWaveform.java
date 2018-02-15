@@ -114,11 +114,17 @@ public class PanelWaveform extends JPanel
 
 	//
 
+	private double minPrev = 0;
+	private double maxPrev = 0;
+
 	@SwingThreadUnsafe
 	private void drawAllImpl()
 	{
 		graphics.setColor(Color.white);
 		graphics.fillRect(0, 0, getWidth(), getHeight());
+
+		minPrev = 0;
+		maxPrev = 0;
 
 		int p = position - 1;
 		Iterator<Tuple<Double, Double>> iterator = ranges.iterator();
@@ -153,7 +159,14 @@ public class PanelWaveform extends JPanel
 		graphics.setColor(Color.black);
 		int min2 = (int) (min * zoom * -1 * getHeight() / 256 + getHeight() / 2);
 		int max2 = (int) (max * zoom * -1 * getHeight() / 256 + getHeight() / 2);
-		graphics.fillRect(position, max2, 1, min2 - max2);
+		int minPrev2 = (int) (minPrev * zoom * -1 * getHeight() / 256 + getHeight() / 2);
+		int maxPrev2 = (int) (maxPrev * zoom * -1 * getHeight() / 256 + getHeight() / 2);
+		if (min2 < maxPrev2) min2 = maxPrev2;
+		if (max2 > minPrev2) max2 = minPrev2;
+		graphics.fillRect(position, max2, 1, min2 - max2 + 1);
+
+		minPrev = min;
+		maxPrev = max;
 	}
 
 	@SwingThreadUnsafe

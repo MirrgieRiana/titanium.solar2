@@ -719,8 +719,8 @@ public class Main
 		private long xInChunk;
 
 		private int samples = 0;
-		private double min = 0;
-		private double max = 0;
+		private double min = Double.MAX_VALUE;
+		private double max = -Double.MAX_VALUE;
 
 		@Override
 		public void preChunk(LocalDateTime time)
@@ -741,12 +741,12 @@ public class Main
 
 			if (checkBoxPaintGraph.isSelected()) {
 				for (int i = 0; i < length; i++) {
-					int samplesPerPixel = getSamplesPerSecond() / 10;
-					if (samples >= (int) (samplesPerPixel / xZoom) - 1) {
+					int samplesPerPixel = (int) (1.0 * getSamplesPerSecond() / 10 / xZoom);
+					if (samples >= samplesPerPixel - 1) {
 						panelWaveform.addEntry(min, max);
 						samples = 0;
-						min = 0;
-						max = 0;
+						min = Double.MAX_VALUE;
+						max = -Double.MAX_VALUE;
 					} else {
 						samples++;
 					}
