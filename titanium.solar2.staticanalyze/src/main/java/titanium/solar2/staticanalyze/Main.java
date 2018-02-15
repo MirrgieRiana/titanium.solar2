@@ -69,6 +69,7 @@ import mirrg.lithium.struct.Struct1;
 import mirrg.lithium.swing.util.HSwing;
 import titanium.solar2.libs.analyze.Analyzer;
 import titanium.solar2.libs.analyze.IFilter;
+import titanium.solar2.staticanalyze.sources.SourceRecording;
 import titanium.solar2.staticanalyze.sources.filesystem.SourceFileSystem;
 
 public class Main
@@ -157,6 +158,7 @@ public class Main
 
 		// ソースの登録
 		registerSource(new SourceFileSystem(p, logger));
+		registerSource(new SourceRecording(p, logger));
 
 		// ウィンドウ生成
 		frame = new JFrame("Static Analyzer - titanium.solar2");
