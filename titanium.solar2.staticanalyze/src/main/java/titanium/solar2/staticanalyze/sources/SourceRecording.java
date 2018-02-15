@@ -32,7 +32,6 @@ public class SourceRecording implements ISource
 
 	@SuppressWarnings("unused")
 	private FiledProperties p;
-	@SuppressWarnings("unused")
 	private LoggerRelay logger;
 
 	private JComboBox<NamedSlot<Optional<Info>>> comboBoxRecordSource;
@@ -169,21 +168,6 @@ public class SourceRecording implements ISource
 			interrupted = true;
 			thread.join();
 		}
-	}
-
-	private static interface IRecordSource
-	{
-
-	}
-
-	private static class RecordSourceDefault
-	{
-
-	}
-
-	private static class RecordSourceMixerInfo
-	{
-
 	}
 
 }
