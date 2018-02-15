@@ -31,7 +31,6 @@ import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import javax.imageio.ImageIO;
 import javax.swing.DefaultComboBoxModel;
@@ -43,7 +42,6 @@ import javax.swing.JFormattedTextField;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JProgressBar;
 import javax.swing.JSlider;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
@@ -69,32 +67,28 @@ import mirrg.lithium.struct.Struct1;
 import mirrg.lithium.swing.util.HSwing;
 import titanium.solar2.libs.analyze.Analyzer;
 import titanium.solar2.libs.analyze.IFilter;
-import titanium.solar2.staticanalyze.util.AnalyzeUtil;
-import titanium.solar2.staticanalyze.util.DatEntryNameParserOr;
-import titanium.solar2.staticanalyze.util.DatEntryNameParserSimple;
-import titanium.solar2.staticanalyze.util.EnumDataFileType;
-import titanium.solar2.staticanalyze.util.IVisitDataListener;
+import titanium.solar2.staticanalyze.sources.filesystem.SourceFileSystem;
 
 public class Main
 {
 
 	private static FiledProperties p;
+	private static LoggerRelay logger;
 
-	private static final String KEY_LOG_FILE = "log.file";
+	private static final FiledProperty PROPERTY_LOG_FILE = new FiledProperty("log.file", "./staticanalyze.log.txt");
 
 	private static Image imageApplication;
 
+	//
+
 	private static JFrame frame;
 
-	private static JTextField textFieldSearchDirectory;
-	private static String KEY_SEARCH_DIRECTORY_PATH = "searchDirectory.path";
-	private static JButton buttonSearchDirectory;
-	private static String KEY_SEARCH_DIRECTORY_CURRENT_DIRECTORY = "searchDirectory.currentDirectory";
+	private static ISource sourceFileSystem;
 
 	private static JTextField textFieldSaveFile;
-	private static String KEY_SAVE_FILE_PATH = "saveFile.path";
+	private static final FiledProperty PROPERTY_SAVE_FILE_PATH = new FiledProperty("saveFile.path", "");
 	private static JButton buttonSaveFile;
-	private static String KEY_SAVE_FILE_CURRENT_DIRECTORY = "saveFile.currentDirectory";
+	private static final FiledProperty PROPERTY_SAVE_FILE_CURRENT_DIRECTORY = new FiledProperty("saveFile.currentDirectory", ".");
 
 	private static final String[] resourceNamesPreset = {
 		"staticanalyze://scripts/default.groovy",
@@ -105,8 +99,8 @@ public class Main
 	private static JComboBox<String> comboBoxPresets;
 	private static JButton buttonImport;
 	private static JButton buttonExport;
-	private static String KEY_IMPORT_AND_EXPORT_CURRENT_DIRECTORY = "importAndExport.currentDirectory";
-	private static String KEY_PRESETS = "presets";
+	private static final FiledProperty PROPERTY_IMPORT_AND_EXPORT_CURRENT_DIRECTORY = new FiledProperty("importAndExport.currentDirectory", ".");
+	private static final FiledProperty PROPERTY_PRESETS = new FiledProperty("presets", "");
 
 	private static JTextField textFieldScriptURL;
 
@@ -119,10 +113,6 @@ public class Main
 
 	private static JLabel labelAnalyzeTime;
 	private static JLabel labelChunkTime;
-	private static JProgressBar progressBarFiles;
-	private static JLabel labelFile;
-	private static JProgressBar progressBarEntries;
-	private static JLabel labelEntry;
 
 	private static PanelWaveform panelWaveform;
 	private static JCheckBox checkBoxPaintGraph;
@@ -141,24 +131,16 @@ public class Main
 		ToolTipManager.sharedInstance().setInitialDelay(500);
 		ToolTipManager.sharedInstance().setDismissDelay(60000);
 
-		p = new FiledProperties(new File("./staticanalyze.properties"))
-			.setDefault(KEY_SEARCH_DIRECTORY_PATH, "")
-			.setDefault(KEY_SEARCH_DIRECTORY_CURRENT_DIRECTORY, ".")
-			.setDefault(KEY_SAVE_FILE_PATH, "")
-			.setDefault(KEY_SAVE_FILE_CURRENT_DIRECTORY, ".")
-			.setDefault(KEY_LOG_FILE, "./staticanalyze.log.txt")
-			.setDefault(KEY_IMPORT_AND_EXPORT_CURRENT_DIRECTORY, ".")
-			.setDefault(KEY_PRESETS, "");
+		p = new FiledProperties(new File("./staticanalyze.properties"));
 		p.init();
 
 		// ロガー設定
-		LoggerRelay logger = new LoggerRelay();
-		AnalyzeUtil.out = logger;
+		logger = new LoggerRelay();
 
 		// ロガー登録
 		logger.addLogger(new LoggerPrintStream(System.out));
 		try {
-			PrintStream out = new PrintStream(new FileOutputStream(new File(p.get(KEY_LOG_FILE))));
+			PrintStream out = new PrintStream(new FileOutputStream(new File(p.get(PROPERTY_LOG_FILE))));
 			logger.addLogger(new LoggerPrintStream(out));
 		} catch (FileNotFoundException e) {
 			throw new RuntimeException(e);
@@ -178,7 +160,7 @@ public class Main
 		frame.setJMenuBar(createJMenuBar(
 			createJMenu("設定",
 				setToolTipText(createJMenuItem("プリセットの初期化", e -> {
-					p.reset(KEY_PRESETS);
+					p.reset(PROPERTY_PRESETS);
 					updatePresets();
 				}), "解析スクリプトのプリセット欄を初期化し、デフォルトの解析スクリプトを読み込みます。")),
 			createJMenu("ヘルプ",
@@ -220,64 +202,28 @@ public class Main
 				}))));
 		{
 			Component mainPane = createBorderPanelUp(
-				createBorderPanelLeft(
-					new JLabel("検索対象"),
-					createBorderPanelRight(
-						process(setToolTipText(textFieldSearchDirectory = new JTextField(), "<html>"
-							+ "解析対象のdatもしくはZIPファイル、もしくは検索対象のディレクトリを指定します。<br>"
-							+ "検索はサブディレクトリに対して再帰的に行われます。<br>"
-							+ "<br>"
-							+ "datファイルの名称は、例えば「00000-20170101-000000-000.dat」のように<br>"
-							+ "正規表現「\\d{5}-(.*)\\.dat」にマッチしなければなりません。<br>"
-							+ "datファイルの名称の中央部は次のいずれかのパターンで示される時刻でなければなりません。<br>"
-							+ "・uuuuMMdd-HHmmss<br>"
-							+ "・uuuuMMdd-HHmmss-SSS<br>"
-							+ "<br>"
-							+ "datファイルはZIPファイルの中に存在しても構いません。<br>"
-							+ "datファイルを含むZIPファイルは名称が「.zip」で終わらなければなりません。<br>"
-							+ "ZIPファイル内のZIPファイルに対しては再帰的に探索されません。"), c -> {
-								c.setText(p.get(KEY_SEARCH_DIRECTORY_PATH));
-								c.addFocusListener(new FocusAdapter() {
-									@Override
-									public void focusLost(FocusEvent e)
-									{
-										p.set(KEY_SEARCH_DIRECTORY_PATH, c.getText());
-									}
-								});
-							}),
-						buttonSearchDirectory = createButton("参照", e -> {
-							JFileChooser fileChooser = new JFileChooser();
-							fileChooser.setCurrentDirectory(new File(p.get(KEY_SEARCH_DIRECTORY_CURRENT_DIRECTORY)));
-							fileChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
-							fileChooser.addChoosableFileFilter(new FileNameExtensionFilter("titanium.solar2データファイル(*.dat)", "dat"));
-							fileChooser.addChoosableFileFilter(new FileNameExtensionFilter("ZIPアーカイブ(*.zip)", "zip"));
-							if (fileChooser.showOpenDialog(frame) == JFileChooser.APPROVE_OPTION) {
-								p.set(KEY_SEARCH_DIRECTORY_PATH, fileChooser.getSelectedFile().getAbsolutePath());
-								p.set(KEY_SEARCH_DIRECTORY_CURRENT_DIRECTORY, fileChooser.getCurrentDirectory().getAbsolutePath());
-								textFieldSearchDirectory.setText(fileChooser.getSelectedFile().getAbsolutePath());
-							}
-						}))),
+				(sourceFileSystem = new SourceFileSystem(p, logger, frame)).getComponent(),
 				createBorderPanelLeft(
 					new JLabel("出力ファイル"),
 					createBorderPanelRight(
 						process(setToolTipText(textFieldSaveFile = new JTextField(), "<html>"
 							+ "解析内容の出力先ファイルです。"), c -> {
-								c.setText(p.get(KEY_SAVE_FILE_PATH));
+								c.setText(p.get(PROPERTY_SAVE_FILE_PATH));
 								c.addFocusListener(new FocusAdapter() {
 									@Override
 									public void focusLost(FocusEvent e)
 									{
-										p.set(KEY_SAVE_FILE_PATH, c.getText());
+										p.set(PROPERTY_SAVE_FILE_PATH, c.getText());
 									}
 								});
 							}),
 						buttonSaveFile = createButton("参照", e -> {
 							JFileChooser fileChooser = new JFileChooser();
-							fileChooser.setCurrentDirectory(new File(p.get(KEY_SAVE_FILE_CURRENT_DIRECTORY)));
+							fileChooser.setCurrentDirectory(new File(p.get(PROPERTY_SAVE_FILE_CURRENT_DIRECTORY)));
 							fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
 							if (fileChooser.showSaveDialog(frame) == JFileChooser.APPROVE_OPTION) {
-								p.set(KEY_SAVE_FILE_PATH, fileChooser.getSelectedFile().getAbsolutePath());
-								p.set(KEY_SAVE_FILE_CURRENT_DIRECTORY, fileChooser.getCurrentDirectory().getAbsolutePath());
+								p.set(PROPERTY_SAVE_FILE_PATH, fileChooser.getSelectedFile().getAbsolutePath());
+								p.set(PROPERTY_SAVE_FILE_CURRENT_DIRECTORY, fileChooser.getCurrentDirectory().getAbsolutePath());
 								textFieldSaveFile.setText(fileChooser.getSelectedFile().getAbsolutePath());
 							}
 						}))),
@@ -301,8 +247,8 @@ public class Main
 										try {
 											source = URLUtil.getString(AnalyzerFactoryStatic.RESOURCE_RESOLVER.getResource(preset));
 										} catch (Exception e2) {
-											AnalyzeUtil.out.error("Failed to load preset: " + preset);
-											AnalyzeUtil.out.error(e2);
+											logger.error("Failed to load preset: " + preset);
+											logger.error(e2);
 											return;
 										}
 
@@ -316,15 +262,15 @@ public class Main
 						setToolTipText(process(buttonImport = createButton("インポート", e -> {
 							try {
 								JFileChooser fileChooser = new JFileChooser();
-								fileChooser.setCurrentDirectory(new File(p.get(KEY_IMPORT_AND_EXPORT_CURRENT_DIRECTORY)));
+								fileChooser.setCurrentDirectory(new File(p.get(PROPERTY_IMPORT_AND_EXPORT_CURRENT_DIRECTORY)));
 								fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
 								fileChooser.addChoosableFileFilter(new FileNameExtensionFilter("titanium.solar2解析スクリプトファイル(*.groovy)", "groovy"));
 								if (fileChooser.showOpenDialog(frame) == JFileChooser.APPROVE_OPTION) {
-									p.set(KEY_IMPORT_AND_EXPORT_CURRENT_DIRECTORY, fileChooser.getCurrentDirectory().getAbsolutePath());
+									p.set(PROPERTY_IMPORT_AND_EXPORT_CURRENT_DIRECTORY, fileChooser.getCurrentDirectory().getAbsolutePath());
 									addPreset(fileChooser.getSelectedFile().toURI().toURL().toString(), true);
 								}
 							} catch (Exception e2) {
-								AnalyzeUtil.out.error(e2);
+								logger.error(e2);
 								return;
 							}
 						}), c -> {
@@ -352,7 +298,7 @@ public class Main
 												return true;
 											}
 										} catch (Exception e) {
-											AnalyzeUtil.out.error(e);
+											logger.error(e);
 										}
 										return true;
 									}
@@ -365,11 +311,11 @@ public class Main
 						setToolTipText(buttonExport = createButton("エクスポート", e -> {
 							try {
 								JFileChooser fileChooser = new JFileChooser();
-								fileChooser.setCurrentDirectory(new File(p.get(KEY_IMPORT_AND_EXPORT_CURRENT_DIRECTORY)));
+								fileChooser.setCurrentDirectory(new File(p.get(PROPERTY_IMPORT_AND_EXPORT_CURRENT_DIRECTORY)));
 								fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
 								fileChooser.addChoosableFileFilter(new FileNameExtensionFilter("titanium.solar2解析スクリプトファイル(*.groovy)", "groovy"));
 								if (fileChooser.showSaveDialog(frame) == JFileChooser.APPROVE_OPTION) {
-									p.set(KEY_IMPORT_AND_EXPORT_CURRENT_DIRECTORY, fileChooser.getCurrentDirectory().getAbsolutePath());
+									p.set(PROPERTY_IMPORT_AND_EXPORT_CURRENT_DIRECTORY, fileChooser.getCurrentDirectory().getAbsolutePath());
 									try (PrintStream out = new PrintStream(new FileOutputStream(fileChooser.getSelectedFile()))) {
 										out.print(textAreaScript.getText());
 									}
@@ -378,7 +324,7 @@ public class Main
 									textFieldScriptURL.setText(preset);
 								}
 							} catch (Exception e2) {
-								AnalyzeUtil.out.error(e2);
+								logger.error(e2);
 								return;
 							}
 						}), "解析スクリプトをファイルに保存します。"))),
@@ -417,16 +363,16 @@ public class Main
 						setToolTipText(buttonValidate = createButton("スクリプトの検証", e -> {
 							Analyzer analyzer;
 							try {
-								analyzer = createAnalyzer(new OutputStreamLogging(AnalyzeUtil.out));
+								analyzer = createAnalyzer(new OutputStreamLogging(logger));
 							} catch (Exception e2) {
-								AnalyzeUtil.out.info(e2);
+								logger.info(e2);
 								return;
 							}
 							if (analyzer == null) {
-								AnalyzeUtil.out.info(new NullPointerException("analyzer"));
+								logger.info(new NullPointerException("analyzer"));
 								return;
 							}
-							AnalyzeUtil.out.info("Successfully Compiled: " + analyzer);
+							logger.info("Successfully Compiled: " + analyzer);
 						}), "解析スクリプトをコンパイルし、構文を検証します。"),
 						createBorderPanelRight(
 							null,
@@ -452,21 +398,7 @@ public class Main
 					}),
 					process(labelChunkTime = new JLabel("..."), c -> {
 						c.setFont(new Font(Font.MONOSPACED, Font.PLAIN, c.getFont().getSize()));
-					}),
-					process(progressBarFiles = new JProgressBar(), c -> {
-						c.setValue(0);
-						c.setString("...");
-						c.setStringPainted(true);
-						c.setFont(new Font(Font.MONOSPACED, Font.PLAIN, c.getFont().getSize()));
-					}),
-					labelFile = new JLabel("..."),
-					process(progressBarEntries = new JProgressBar(), c -> {
-						c.setValue(0);
-						c.setString("...");
-						c.setStringPainted(true);
-						c.setFont(new Font(Font.MONOSPACED, Font.PLAIN, c.getFont().getSize()));
-					}),
-					labelEntry = new JLabel("...")));
+					})));
 			frame.add(createSplitPaneVertical(0,
 				createSplitPaneVertical(1,
 					createMargin(4, mainPane),
@@ -544,7 +476,7 @@ public class Main
 					try {
 						SystemTray.getSystemTray().add(trayIcon);
 					} catch (AWTException e1) {
-						AnalyzeUtil.out.error(e1);
+						logger.error(e1);
 					}
 				}
 
@@ -584,7 +516,7 @@ public class Main
 	{
 		// 既存
 		{
-			String[] presets = p.get(KEY_PRESETS).split(";");
+			String[] presets = p.get(PROPERTY_PRESETS).split(";");
 			for (int i = 0; i < presets.length; i++) {
 				if (presets[i].equals(preset)) {
 					comboBoxPresets.setSelectedIndex(i);
@@ -594,9 +526,9 @@ public class Main
 		}
 
 		// 新規追加
-		String presets = p.get(KEY_PRESETS);
+		String presets = p.get(PROPERTY_PRESETS);
 		if (!presets.isEmpty()) presets = presets + ";";
-		p.set(KEY_PRESETS, presets + ";" + preset);
+		p.set(PROPERTY_PRESETS, presets + ";" + preset);
 		comboBoxPresets.addItem(preset);
 		if (changePreset) {
 			comboBoxPresets.setSelectedIndex(comboBoxPresets.getItemCount() - 1);
@@ -609,7 +541,7 @@ public class Main
 		for (String resourceName : resourceNamesPreset) {
 			comboBoxPresets.addItem(resourceName);
 		}
-		for (String string : p.get(KEY_PRESETS).split(";")) {
+		for (String string : p.get(PROPERTY_PRESETS).split(";")) {
 			comboBoxPresets.addItem(string);
 		}
 	}
@@ -647,7 +579,7 @@ public class Main
 	{
 		synchronized (lock) {
 			if (thread != null) {
-				AnalyzeUtil.out.error("前回の解析が終わっていません。");
+				logger.error("前回の解析が終わっていません。");
 				return;
 			}
 
@@ -675,37 +607,36 @@ public class Main
 
 						//
 
-						AnalyzeUtil.out.info("Analyze Start");
+						logger.info("Analyze Start");
 
 						Analyzer analyzer;
 						try {
 							analyzer = createAnalyzer(out3);
 						} catch (Exception e) {
-							AnalyzeUtil.out.error(e);
+							logger.error(e);
 							return;
 						}
 
 						try {
-							doAnalyze(new File(textFieldSearchDirectory.getText()), analyzer);
+							sourceFileSystem.doAnalyze(analyzer);
 						} catch (InterruptedException e) {
-							AnalyzeUtil.out.warn("Analyze Interrupted");
+							logger.warn("Analyze Interrupted");
 							return;
 						} catch (Exception e) {
-							AnalyzeUtil.out.error(e);
+							logger.error(e);
 							return;
 						}
 
-						AnalyzeUtil.out.info("Analyze Finished");
+						logger.info("Analyze Finished");
 					} catch (IOException e1) {
-						AnalyzeUtil.out.error(HLog.getStackTrace(e1));
+						logger.error(HLog.getStackTrace(e1));
 					}
 				} finally {
 					synchronized (lock) {
 						timer.stop();
 
 						thread = null;
-						textFieldSearchDirectory.setEnabled(true);
-						buttonSearchDirectory.setEnabled(true);
+						sourceFileSystem.setEnabled(true);
 						textFieldSaveFile.setEnabled(true);
 						buttonSaveFile.setEnabled(true);
 						comboBoxPresets.setEnabled(true);
@@ -724,8 +655,7 @@ public class Main
 					}
 				}
 			});
-			textFieldSearchDirectory.setEnabled(false);
-			buttonSearchDirectory.setEnabled(false);
+			sourceFileSystem.setEnabled(false);
 			textFieldSaveFile.setEnabled(false);
 			buttonSaveFile.setEnabled(false);
 			comboBoxPresets.setEnabled(false);
@@ -753,7 +683,7 @@ public class Main
 		return AnalyzerFactoryStatic.createAnalyzer(
 			textAreaScript.getText(),
 			AnalyzerFactoryStatic.RESOURCE_RESOLVER.getResource(textFieldScriptURL.getText()),
-			AnalyzeUtil.out,
+			logger,
 			getSamplesPerSecond(),
 			out,
 			new FilterStaticAnalyzeGUIExtension());
@@ -808,119 +738,11 @@ public class Main
 
 	}
 
-	private static void doAnalyze(File directory, Analyzer analyzer) throws IOException, InterruptedException
-	{
-		int bufferLength = 4096;
-		analyzer.preAnalyze();
-		try {
-			AnalyzeUtil.processDirectoryOrFile(
-				new byte[bufferLength],
-				new IVisitDataListener() {
-
-					double[] buffer2 = new double[bufferLength];
-
-					@Override
-					public void preFile(File file, EnumDataFileType dataFileType, int fileIndex, int fileCount)
-					{
-						SwingUtilities.invokeLater(() -> {
-							progressBarFiles.setValue(fileIndex);
-							progressBarFiles.setMinimum(0);
-							progressBarFiles.setMaximum(fileCount);
-							progressBarFiles.setString("ファイル " + fileIndex + " / " + fileCount);
-							labelFile.setText("" + file);
-
-							progressBarEntries.setValue(0);
-							progressBarEntries.setMinimum(0);
-							progressBarEntries.setMaximum(0);
-							progressBarEntries.setString("エントリー " + 0 + " / " + 0);
-							labelEntry.setText("...");
-						});
-
-						AnalyzeUtil.out.info(String.format("File Accepted: [%s] %s",
-							dataFileType.name(),
-							file.getAbsolutePath()));
-					}
-
-					@Override
-					public void preEntry(String entryName, LocalDateTime time, int entryIndex, int entryCount)
-					{
-						SwingUtilities.invokeLater(() -> {
-							progressBarEntries.setValue(entryIndex);
-							progressBarEntries.setMinimum(0);
-							progressBarEntries.setMaximum(entryCount);
-							progressBarEntries.setString("エントリー " + entryIndex + " / " + entryCount);
-							labelEntry.setText(entryName);
-						});
-
-						AnalyzeUtil.out.info("Entry Accepted: " + entryName);
-						analyzer.preChunk(time);
-					}
-
-					@Override
-					public void onData(byte[] buffer, int start, int length)
-					{
-						for (int i = 0; i < length; i++) {
-							buffer2[i] = buffer[i + start];
-						}
-						analyzer.processData(buffer2, length, new Struct1<>(0.0));
-					}
-
-					@Override
-					public void postEntry()
-					{
-						analyzer.postChunk();
-					}
-
-					@Override
-					public void ignoreEntry(String entryName, int entryIndex, int entryCount)
-					{
-						SwingUtilities.invokeLater(() -> {
-							progressBarEntries.setValue(entryIndex);
-							progressBarEntries.setMinimum(0);
-							progressBarEntries.setMaximum(entryCount);
-							progressBarEntries.setString("エントリー " + entryIndex + " / " + entryCount);
-							labelEntry.setText(entryName);
-						});
-
-						AnalyzeUtil.out.debug("Entry Ignored: " + entryName);
-					}
-
-					@Override
-					public void ignoreFile(File file, int fileIndex, int fileCount)
-					{
-						SwingUtilities.invokeLater(() -> {
-							progressBarFiles.setValue(fileIndex);
-							progressBarFiles.setMinimum(0);
-							progressBarFiles.setMaximum(fileCount);
-							progressBarFiles.setString("ファイル " + fileIndex + " / " + fileCount);
-							labelFile.setText("" + file);
-
-							progressBarEntries.setValue(0);
-							progressBarEntries.setMinimum(0);
-							progressBarEntries.setMaximum(0);
-							progressBarEntries.setString("エントリー " + 0 + " / " + 0);
-							labelEntry.setText("...");
-						});
-
-						AnalyzeUtil.out.debug("File Ignored: " + file.getAbsolutePath());
-					}
-
-				},
-				directory,
-				n -> n.endsWith(".zip"),
-				new DatEntryNameParserOr(
-					new DatEntryNameParserSimple(Pattern.compile("\\d{5}-(.*)\\.dat"), DateTimeFormatter.ofPattern("uuuuMMdd-HHmmss")),
-					new DatEntryNameParserSimple(Pattern.compile("\\d{5}-(.*)\\.dat"), DateTimeFormatter.ofPattern("uuuuMMdd-HHmmss-SSS"))));
-		} finally {
-			analyzer.postAnalyze();
-		}
-	}
-
 	private static void interrupt()
 	{
 		synchronized (lock) {
 			if (thread == null) {
-				AnalyzeUtil.out.error("解析が実行中ではありません。");
+				logger.error("解析が実行中ではありません。");
 				return;
 			}
 

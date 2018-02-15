@@ -1,4 +1,4 @@
-package titanium.solar2.staticanalyze.util;
+package titanium.solar2.staticanalyze.sources.filesystem;
 
 import java.io.InputStream;
 import java.util.zip.ZipEntry;

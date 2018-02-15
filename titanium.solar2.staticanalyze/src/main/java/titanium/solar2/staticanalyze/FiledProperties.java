@@ -4,8 +4,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Hashtable;
-import java.util.Map.Entry;
 import java.util.Properties;
 
 public class FiledProperties
@@ -13,18 +11,11 @@ public class FiledProperties
 
 	private File file;
 
-	private Hashtable<String, String> propertiesDefault = new Hashtable<>();
 	private Properties properties = new Properties();
 
 	public FiledProperties(File file)
 	{
 		this.file = file;
-	}
-
-	public FiledProperties setDefault(String key, String value)
-	{
-		propertiesDefault.put(key, value);
-		return this;
 	}
 
 	public void init()
@@ -34,12 +25,6 @@ public class FiledProperties
 				properties.load(new FileInputStream(file));
 			} catch (IOException e) {
 				throw new RuntimeException(e);
-			}
-		}
-
-		for (Entry<String, String> entry : propertiesDefault.entrySet()) {
-			if (!properties.containsKey(entry.getKey())) {
-				properties.setProperty(entry.getKey(), entry.getValue());
 			}
 		}
 
@@ -55,25 +40,21 @@ public class FiledProperties
 		}
 	}
 
-	public String get(String key)
+	public String get(FiledProperty property)
 	{
-		return properties.getProperty(key);
+		if (!properties.containsKey(property.getKey())) set(property, property.getDefaultValue());
+		return properties.getProperty(property.getKey());
 	}
 
-	public void set(String key, String value)
+	public void set(FiledProperty property, String value)
 	{
-		properties.setProperty(key, value);
+		properties.setProperty(property.getKey(), value);
 		save();
 	}
 
-	public void reset(String key)
+	public void reset(FiledProperty property)
 	{
-		if (propertiesDefault.containsKey(key)) {
-			set(key, propertiesDefault.get(key));
-		} else {
-			properties.remove(key);
-			save();
-		}
+		set(property, property.getDefaultValue());
 	}
 
 }
