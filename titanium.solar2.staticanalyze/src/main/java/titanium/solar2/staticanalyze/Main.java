@@ -658,6 +658,7 @@ public class Main
 						timer.stop();
 
 						thread = null;
+						tabbedPaneSource.setEnabled(true);
 						getSource().setEnabled(true);
 						textFieldSaveFile.setEnabled(true);
 						buttonSaveFile.setEnabled(true);
@@ -677,6 +678,7 @@ public class Main
 					}
 				}
 			});
+			tabbedPaneSource.setEnabled(false);
 			getSource().setEnabled(false);
 			textFieldSaveFile.setEnabled(false);
 			buttonSaveFile.setEnabled(false);
