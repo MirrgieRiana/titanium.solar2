@@ -48,7 +48,7 @@ public class SourceRecording implements ISource
 	public Component getComponent(JFrame frame)
 	{
 		return createBorderPanelUp(
-			new JLabel("44100Hz, 1ch, 8bit"),
+			new JLabel("44100Hz, 1ch, 16bit"),
 			setToolTipText(labelChunk = new JLabel("..."), "現在のチャンクの開始時刻です。"),
 			null);
 	}
