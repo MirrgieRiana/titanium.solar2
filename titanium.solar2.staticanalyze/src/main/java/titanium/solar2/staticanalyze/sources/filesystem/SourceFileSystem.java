@@ -54,9 +54,9 @@ public class SourceFileSystem implements ISource
 	private static final FiledProperty PROPERTY_SEARCH_DIRECTORY_CURRENT_DIRECTORY = new FiledProperty("searchDirectory.currentDirectory", ".");
 
 	private JProgressBar progressBarFiles;
-	private static JLabel labelFile;
+	private JLabel labelFile;
 	private JProgressBar progressBarEntries;
-	private static JLabel labelEntry;
+	private JLabel labelEntry;
 
 	public SourceFileSystem(FiledProperties p, LoggerRelay logger, JFrame frame)
 	{
