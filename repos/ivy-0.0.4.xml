@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ivy-module version="2.0" xmlns:m="http://ant.apache.org/ivy/maven">
+  <info organisation="titanium.solar2" module="titanium.solar2.staticanalyze" revision="0.0.4" status="integration" publication="20180215150756">
+    <description/>
+  </info>
+  <configurations>
+    <conf name="archives" visibility="public" description="Configuration for archive artifacts."/>
+    <conf name="compile" visibility="private" description="Compile classpath for source set 'main'."/>
+    <conf name="default" visibility="public" description="Configuration for default artifacts." extends="runtime"/>
+    <conf name="runtime" visibility="private" description="Runtime classpath for source set 'main'." extends="compile"/>
+    <conf name="testCompile" visibility="private" description="Compile classpath for source set 'test'." extends="compile"/>
+    <conf name="testRuntime" visibility="private" description="Runtime classpath for source set 'test'." extends="runtime,testCompile"/>
+  </configurations>
+  <publications>
+    <artifact name="titanium.solar2.staticanalyze" type="jar" ext="jar" conf="archives,runtime"/>
+    <artifact name="titanium.solar2.staticanalyze" type="jar" ext="jar" conf="archives" m:classifier="sources"/>
+    <artifact name="titanium.solar2.staticanalyze" type="jar" ext="jar" conf="archives" m:classifier="javadoc"/>
+  </publications>
+  <dependencies>
+    <dependency org="com.fifesoft" name="rsyntaxtextarea" rev="r239" conf="compile-&gt;default"/>
+    <dependency org="mirrg.lithium" name="mirrg.lithium.lang" rev="1.2+" conf="compile-&gt;default"/>
+    <dependency org="mirrg.lithium" name="mirrg.lithium.swing.util" rev="1.3+" conf="compile-&gt;default"/>
+    <dependency org="mirrg.lithium" name="mirrg.lithium.logging" rev="3.4+" conf="compile-&gt;default"/>
+    <dependency org="titanium.solar2" name="titanium.solar2.libs.analyze" rev="10.0+" conf="compile-&gt;default"/>
+    <dependency org="titanium.solar2" name="titanium.solar2.libs.kisyou" rev="1.1+" conf="compile-&gt;default"/>
+    <dependency org="titanium.solar2" name="titanium.solar2.libs.time" rev="1.1+" conf="compile-&gt;default"/>
+    <dependency org="titanium.solar2" name="titanium.solar2.libs.util" rev="1.0+" conf="compile-&gt;default"/>
+    <dependency org="junit" name="junit" rev="4.+" conf="testCompile-&gt;default"/>
+  </dependencies>
+</ivy-module>
