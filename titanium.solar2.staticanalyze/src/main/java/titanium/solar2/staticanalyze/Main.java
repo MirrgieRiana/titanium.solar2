@@ -38,6 +38,8 @@ import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
+import javax.swing.JDialog;
+import javax.swing.JEditorPane;
 import javax.swing.JFileChooser;
 import javax.swing.JFormattedTextField;
 import javax.swing.JFrame;
@@ -175,39 +177,22 @@ public class Main
 					JOptionPane.showMessageDialog(frame, "GUIコンポーネントにカーソルを合わせるとヒントが表示されます。");
 				}),
 				createJMenuItem("更新履歴", e -> {
-					JOptionPane.showMessageDialog(frame, "<html>"
-						+ "<h3>0.0.1</h3>"
-						+ "・最初のリリース"
-						+ "<h3>0.0.2</h3>"
-						+ "・解析スクリプト入力欄を豪華（RSyntaxTextArea）に<br>"
-						+ "・解析スクリプト入力欄にファイルをドロップするとインポートするように<br>"
-						+ "・<b>【破壊的】解析スクリプトのデフォルトインポートを変更</b><br>"
-						+ "・解析スクリプトの組み込み変数context追加<br>"
-						+ "・更新履歴欄の追加"
-						+ "<h3>0.0.3</h3>"
-						+ "・解析スクリプト入力欄でコピー・ペーストできない不具合を修正<br>"
-						+ "・ファイルのドロップ機能をインポートボタンに移動<br>"
-						+ "・グラフのX軸方向の縮尺変更追加<br>"
-						+ "・タスクトレイアイコン追加<br>"
-						+ "・処理完了時、ウィンドウにフォーカスがなければ通知を表示<br>"
-						+ "・現在処理中のファイルとエントリーをウィンドウ上に表示<br>"
-						+ "・ログ出力欄の最下部に空行が表示されないように<br>"
-						+ "・解析スクリプトでrendererをデフォルトインポート"
-						+ "<h3>0.0.4</h3>"
-						+ "・<b>【破壊的】解析スクリプトでprocessをdetectorに変更</b><br>"
-						+ "・<b>【破壊的】解析スクリプトでcontext.getLogger()をloggerに変更</b><br>"
-						+ "・<b>【破壊的】解析スクリプトでのリソースの指定をスクリプトファイルからの相対参照に変更</b><br>"
-						+ "・<b>【破壊的】ビルトインスクリプトファイルの参照文字列の変更</b><br>"
-						+ "・<b>【破壊的】プリセットをpropertiesではなく内部的に与えるように変更</b><br>"
-						+ "　・propertiesの初期化が必要<br>"
-						+ "・<b>【破壊的】WaveformUtilsをWaveformUtilに変更</b><br>"
-						+ "・WaveformUtil.fromCSVで\"#\"によるコメントアウトが可能に<br>"
-						+ "・プリセットのプロトコル名変更<br>"
-						+ "・解析スクリプト履歴の初期化機能の追加<br>"
-						+ "・解析スクリプトURLの指定欄の追加"
-						+ "・データソースをタブ化"
-						+ "・録音データソースの追加"
-						+ "");
+					JDialog dialog = new JDialog(frame, "更新履歴");
+					dialog.setLayout(new CardLayout());
+					dialog.add(createScrollPane(process(new JEditorPane(), c -> {
+						c.setContentType("text/html");
+						c.setEditable(false);
+						try {
+							c.setPage(Main.class.getResource("changelog.html"));
+						} catch (IOException e1) {
+							logger.error(e1);
+							throw new RuntimeException(e1);
+						}
+					}), 400, 300));
+					dialog.pack();
+					dialog.setLocationByPlatform(true);
+					dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+					dialog.setVisible(true);
 				}))));
 		{
 			Component mainPane = createBorderPanelUp(
