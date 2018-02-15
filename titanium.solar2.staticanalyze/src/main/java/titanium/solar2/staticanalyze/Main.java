@@ -66,7 +66,6 @@ import mirrg.lithium.logging.LoggerRelay;
 import mirrg.lithium.logging.LoggerTextPane;
 import mirrg.lithium.logging.OutputStreamLogging;
 import mirrg.lithium.struct.Struct1;
-import mirrg.lithium.struct.Struct2;
 import mirrg.lithium.swing.util.HSwing;
 import titanium.solar2.libs.analyze.Analyzer;
 import titanium.solar2.libs.analyze.IFilter;
@@ -204,14 +203,14 @@ public class Main
 						+ "・プリセットのプロトコル名変更<br>"
 						+ "・解析スクリプト履歴の初期化機能の追加<br>"
 						+ "・解析スクリプトURLの指定欄の追加"
+						+ "・データソースをタブ化"
 						+ "");
 				}))));
 		{
 			Component mainPane = createBorderPanelUp(
 				process(tabbedPaneSource = new JTabbedPane(), c -> {
-					for (Struct2<ISource, Component> source : sources) {
-						source.y = source.x.getComponent(frame);
-						c.addTab(source.x.getTabTitle(), source.y);
+					for (ISource source : sources) {
+						c.addTab(source.getTabTitle(), new ContainerSource(source, frame));
 					}
 				}),
 				createBorderPanelLeft(
@@ -518,21 +517,16 @@ public class Main
 		frame.setVisible(true);
 	}
 
-	private static ArrayList<Struct2<ISource, Component>> sources = new ArrayList<>();
+	private static ArrayList<ISource> sources = new ArrayList<>();
 
 	private static void registerSource(ISource source)
 	{
-		sources.add(new Struct2<>(source, null));
+		sources.add(source);
 	}
 
 	private static ISource getSource()
 	{
-		Component component = tabbedPaneSource.getSelectedComponent();
-		return sources.stream()
-			.filter(s -> s.y == component)
-			.findFirst()
-			.map(s -> s.x)
-			.get();
+		return ((ContainerSource) tabbedPaneSource.getSelectedComponent()).source;
 	}
 
 	private static void clearOutput()
