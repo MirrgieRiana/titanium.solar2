@@ -123,7 +123,8 @@ public class SourceFileSystem implements ISource
 				c.setStringPainted(true);
 				c.setFont(new Font(Font.MONOSPACED, Font.PLAIN, c.getFont().getSize()));
 			}),
-			labelEntry = new JLabel("..."));
+			labelEntry = new JLabel("..."),
+			null);
 	}
 
 	@Override
