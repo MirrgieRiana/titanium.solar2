@@ -24,6 +24,7 @@ public class AnalyzerFactory extends GroovyProperties
 
 	public static Analyzer createAnalyzer(
 		String resourceName,
+		String charset,
 		Logger logger,
 		int samplesPerSecond,
 		OutputStream out,
@@ -34,7 +35,7 @@ public class AnalyzerFactory extends GroovyProperties
 			logger,
 			samplesPerSecond,
 			out,
-			filterExtension).eval(resourceName);
+			filterExtension).eval(resourceName, charset);
 	}
 
 	protected Logger logger;
@@ -68,7 +69,7 @@ public class AnalyzerFactory extends GroovyProperties
 	@Override
 	protected String convertScript(String script) throws IOException
 	{
-		return URLUtil.getString(getResourceResolver().getResource("analyze://header.groovy")) + System.lineSeparator() + script;
+		return URLUtil.getString(getResourceResolver().getResource("analyze://header.groovy"), "UTF-8") + System.lineSeparator() + script;
 	}
 
 }

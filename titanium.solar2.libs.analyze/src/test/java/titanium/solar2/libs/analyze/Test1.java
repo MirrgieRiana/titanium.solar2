@@ -47,7 +47,7 @@ public class Test1
 				},
 				samplesPerSecond,
 				out,
-				new FilterDummy()).eval(Test1.class.getResource("test1.groovy"));
+				new FilterDummy()).eval(Test1.class.getResource("test1.groovy"), "UTF-8");
 
 			doAnalyze(analyzer, samplesPerSecond);
 

@@ -62,7 +62,7 @@ dependencies {
 	compile group: 'mirrg.lithium', name: 'mirrg.lithium.struct', version: '2.2+'
 	compile group: 'mirrg.lithium', name: 'mirrg.lithium.event', version: '2.1+'
 	compile group: 'mirrg.lithium', name: 'mirrg.lithium.logging', version: '3.4+'
-	compile group: 'mirrg.lithium', name: 'mirrg.lithium.groovy.properties', version: '3.0+'
+	compile group: 'mirrg.lithium', name: 'mirrg.lithium.groovy.properties', version: '4.0+'
 
 	compile group: 'titanium.solar2', name: 'titanium.solar2.libs.time', version: '1.1+'
 }
