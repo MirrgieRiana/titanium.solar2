@@ -30,6 +30,7 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.imageio.ImageIO;
@@ -43,6 +44,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JSlider;
+import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
@@ -64,6 +66,7 @@ import mirrg.lithium.logging.LoggerRelay;
 import mirrg.lithium.logging.LoggerTextPane;
 import mirrg.lithium.logging.OutputStreamLogging;
 import mirrg.lithium.struct.Struct1;
+import mirrg.lithium.struct.Struct2;
 import mirrg.lithium.swing.util.HSwing;
 import titanium.solar2.libs.analyze.Analyzer;
 import titanium.solar2.libs.analyze.IFilter;
@@ -83,7 +86,7 @@ public class Main
 
 	private static JFrame frame;
 
-	private static ISource sourceFileSystem;
+	private static JTabbedPane tabbedPaneSource;
 
 	private static JTextField textFieldSaveFile;
 	private static final FiledProperty PROPERTY_SAVE_FILE_PATH = new FiledProperty("saveFile.path", "");
@@ -153,6 +156,9 @@ public class Main
 			throw new RuntimeException(e);
 		}
 
+		// ソースの登録
+		registerSource(new SourceFileSystem(p, logger));
+
 		// ウィンドウ生成
 		frame = new JFrame("Static Analyzer - titanium.solar2");
 		frame.setIconImage(imageApplication);
@@ -202,7 +208,12 @@ public class Main
 				}))));
 		{
 			Component mainPane = createBorderPanelUp(
-				(sourceFileSystem = new SourceFileSystem(p, logger, frame)).getComponent(),
+				process(tabbedPaneSource = new JTabbedPane(), c -> {
+					for (Struct2<ISource, Component> source : sources) {
+						source.y = source.x.getComponent(frame);
+						c.addTab(source.x.getTabTitle(), source.y);
+					}
+				}),
 				createBorderPanelLeft(
 					new JLabel("出力ファイル"),
 					createBorderPanelRight(
@@ -233,6 +244,7 @@ public class Main
 						process(setToolTipText(comboBoxPresets = new JComboBox<>(new DefaultComboBoxModel<>()), "<html>"
 							+ "ここから解析スクリプトのサンプルや読み込んだことのある解析スクリプトを呼び出すことができます。"), c -> {
 								frame.addWindowListener(new WindowAdapter() {
+
 									@Override
 									public void windowOpened(WindowEvent e)
 									{
@@ -305,9 +317,8 @@ public class Main
 									return false;
 								}
 							});
-						}), "<html>"
-							+ "ファイルから解析スクリプトを読み込みます。<br>"
-							+ "このボタンにはファイルをドロップできます。"),
+						}), "<html>" + "ファイルから解析スクリプトを読み込みます。<br>" + "このボタンにはファイルをドロップできます。"),
+
 						setToolTipText(buttonExport = createButton("エクスポート", e -> {
 							try {
 								JFileChooser fileChooser = new JFileChooser();
@@ -492,6 +503,7 @@ public class Main
 		frame.setLocationByPlatform(true);
 		frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 		frame.addWindowListener(new WindowAdapter() {
+
 			@Override
 			public void windowClosing(WindowEvent e)
 			{
@@ -501,8 +513,26 @@ public class Main
 					}
 				}
 			}
+
 		});
 		frame.setVisible(true);
+	}
+
+	private static ArrayList<Struct2<ISource, Component>> sources = new ArrayList<>();
+
+	private static void registerSource(ISource source)
+	{
+		sources.add(new Struct2<>(source, null));
+	}
+
+	private static ISource getSource()
+	{
+		Component component = tabbedPaneSource.getSelectedComponent();
+		return sources.stream()
+			.filter(s -> s.y == component)
+			.findFirst()
+			.map(s -> s.x)
+			.get();
 	}
 
 	private static void clearOutput()
@@ -564,9 +594,7 @@ public class Main
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			labelAnalyzeTime.setText(String.format("解析開始: %s; 経過: %.03f秒",
-				format(startTime),
-				1.0 * (System.nanoTime() - startNanoTime) / 1_000_000_000));
+			labelAnalyzeTime.setText(String.format("解析開始: %s; 経過: %.03f秒", format(startTime), 1.0 * (System.nanoTime() - startNanoTime) / 1_000_000_000));
 		}
 	});
 	static {
@@ -618,7 +646,7 @@ public class Main
 						}
 
 						try {
-							sourceFileSystem.doAnalyze(analyzer);
+							getSource().doAnalyze(analyzer);
 						} catch (InterruptedException e) {
 							logger.warn("Analyze Interrupted");
 							return;
@@ -636,7 +664,7 @@ public class Main
 						timer.stop();
 
 						thread = null;
-						sourceFileSystem.setEnabled(true);
+						getSource().setEnabled(true);
 						textFieldSaveFile.setEnabled(true);
 						buttonSaveFile.setEnabled(true);
 						comboBoxPresets.setEnabled(true);
@@ -655,7 +683,7 @@ public class Main
 					}
 				}
 			});
-			sourceFileSystem.setEnabled(false);
+			getSource().setEnabled(false);
 			textFieldSaveFile.setEnabled(false);
 			buttonSaveFile.setEnabled(false);
 			comboBoxPresets.setEnabled(false);

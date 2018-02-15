@@ -46,7 +46,6 @@ public class SourceFileSystem implements ISource
 
 	private FiledProperties p;
 	private LoggerRelay logger;
-	private JFrame frame;
 
 	private JTextField textFieldSearchDirectory;
 	private static final FiledProperty PROPERTY_SEARCH_DIRECTORY_PATH = new FiledProperty("searchDirectory.path", "");
@@ -58,15 +57,20 @@ public class SourceFileSystem implements ISource
 	private JProgressBar progressBarEntries;
 	private JLabel labelEntry;
 
-	public SourceFileSystem(FiledProperties p, LoggerRelay logger, JFrame frame)
+	public SourceFileSystem(FiledProperties p, LoggerRelay logger)
 	{
 		this.p = p;
 		this.logger = logger;
-		this.frame = frame;
 	}
 
 	@Override
-	public Component getComponent()
+	public String getTabTitle()
+	{
+		return "ファイル";
+	}
+
+	@Override
+	public Component getComponent(JFrame frame)
 	{
 		return createBorderPanelUp(
 			createBorderPanelLeft(
