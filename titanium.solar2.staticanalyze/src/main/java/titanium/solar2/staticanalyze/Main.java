@@ -246,7 +246,7 @@ public class Main
 
 										String source;
 										try {
-											source = URLUtil.getString(AnalyzerFactoryStatic.RESOURCE_RESOLVER.getResource(preset));
+											source = URLUtil.getString(AnalyzerFactoryStatic.RESOURCE_RESOLVER.getResource(preset), "UTF-8"/* TODO */);
 										} catch (Exception e2) {
 											logger.error("Failed to load preset: " + preset);
 											logger.error(e2);
