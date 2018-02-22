@@ -1,7 +1,11 @@
 package titanium.solar2.libs.record;
 
+import java.util.Optional;
+import java.util.stream.Stream;
+
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.TargetDataLine;
 
 import mirrg.lithium.event.EventManager;
@@ -26,11 +30,13 @@ public class Recorder implements IEventProvider<RecoderEvent>
 	public final int bytesPerChunk;
 
 	public final AudioFormat audioFormat;
-	public final TargetDataLine targetDataLine;
 	public final Buffers buffers;
 	public final ChunkStorage chunkStorage;
+	private Optional<String> oInfoName;
 
-	public Recorder(double secondsPerChunk, int samplesPerSecond, int bitsPerSample) throws Exception
+	public TargetDataLine targetDataLine;
+
+	public Recorder(double secondsPerChunk, int samplesPerSecond, int bitsPerSample, Optional<String> oInfoName) throws Exception
 	{
 		this.secondsPerChunk = secondsPerChunk;
 		this.samplesPerSecond = samplesPerSecond;
@@ -49,13 +55,14 @@ public class Recorder implements IEventProvider<RecoderEvent>
 			bytesPerSample * samplesPerFrame,
 			samplesPerSecond / samplesPerFrame,
 			false);
-		this.targetDataLine = AudioSystem.getTargetDataLine(audioFormat);
 		this.buffers = new Buffers(bytesPerChunk);
 		this.chunkStorage = new ChunkStorage();
+		this.oInfoName = oInfoName;
 	}
 
 	public void ready() throws Exception
 	{
+		targetDataLine = createTargetDataLine();
 		targetDataLine.open(audioFormat);
 
 		System.err.println(String.format("ChunkSize:%sseconds;Sampling:%sHz %sbit %schannels",
@@ -65,6 +72,18 @@ public class Recorder implements IEventProvider<RecoderEvent>
 			channels));
 
 		event().post(new RecoderEvent.Ready());
+	}
+
+	protected TargetDataLine createTargetDataLine() throws LineUnavailableException
+	{
+		if (oInfoName.isPresent()) {
+			return AudioSystem.getTargetDataLine(audioFormat, Stream.of(AudioSystem.getMixerInfo())
+				.filter(i -> i.toString().contains(oInfoName.get()))
+				.findFirst()
+				.get());
+		} else {
+			return AudioSystem.getTargetDataLine(audioFormat);
+		}
 	}
 
 	public void start()
