@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Solar Packet Viewer</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+
+<script src="/jquery-3.2.1.min.js"></script>
+<script src="/jquery.color-2.1.2.min.js"></script>
+<script src="/canvg.min.js"></script>
+<script src="/Chart.bundle.min.js"></script>
+<script src="/moment.js"></script>
+<script src="/sprintf.min.js"></script>
+
+<script src="/DynamicAnalyzeWebSocketIO.js"></script>
+
+<script>
+	function getSum(array)
+	{
+		return array.reduce((a, b) => a + (b == null ? 0 : b), 0);
+	}
+
+	function getAverage(array)
+	{
+		var sum = array.reduce((a, b) => a + (b == null ? 0 : b), 0);
+		var count = array.reduce((a, b) => a + (b == null ? 0 : 1), 0);
+		return count == 0 ? 0 : sum / count;
+	}
+
+	function parseTime(time)
+	{
+		return moment(time, "YYYYMMDD-HHmmss-SSS");
+	}
+</script>
+<script>
+	function ViewChart($iframe, datasetInfos, width, height)
+	{
+		// Example:
+		/* datasetInfos = [
+			{
+				color: "#f00",
+				label: "A",
+			},
+		] */
+		this.$iframe = $iframe;
+		this.datasetInfos = datasetInfos;
+		this.width = width;
+		this.height = height;
+	}
+	ViewChart.prototype.$iframe = null;
+	ViewChart.prototype.datasetInfos = null;
+	ViewChart.prototype.width = null;
+	ViewChart.prototype.height = null;
+	ViewChart.prototype.loaded = false;
+	ViewChart.prototype.chart = null;
+	ViewChart.prototype.datasets = null;
+	ViewChart.prototype.backDatasets = null;
+	ViewChart.prototype.now = null;
+	ViewChart.prototype.visiblePeriod = 1 * 60 * 1000;
+	ViewChart.prototype.maxPeriod = 5 * 60 * 1000;
+	ViewChart.prototype.yMin = 0;
+	ViewChart.prototype.yMax = 50;
+	ViewChart.prototype.yStepSize = 10;
+	ViewChart.prototype.onData = function(datasetId, value, time) {
+		var viewChart = this;
+		if (viewChart.loaded) {
+			var time = parseTime(time);
+			viewChart.now = time.valueOf();
+
+			viewChart.addMarker(datasetId, {
+				x: time,
+				y: value,
+			});
+
+		}
+	};
+	ViewChart.prototype.addMarker = function(datasetId, entry) {
+		this.datasets[datasetId].data.push(entry);
+		this.backDatasets[datasetId].push(entry);
+		this.chart.update();
+	};
+	ViewChart.prototype.loadChart = function() {
+		var viewChart = this;
+
+		viewChart.$iframe.on("load", function() {
+			viewChart.init();
+			viewChart.loaded = true;
+		});
+		viewChart.$iframe[0].src = "chart.html";
+	};
+	ViewChart.prototype.init = function() {
+		var viewChart = this;
+
+		// 	その他の初期化
+		viewChart.backDatasets = viewChart.datasetInfos.map((datasetInfo) => []);
+
+		// Chartの生成
+		viewChart.$iframe.contents().find("#chart")[0].width = viewChart.width;
+		viewChart.$iframe.contents().find("#chart")[0].height = viewChart.height;
+		viewChart.chart = viewChart.createChart();
+
+		// グラフのスクロールと自動更新
+		setInterval(function() {
+			viewChart.now += 20;
+			viewChart.chart.update();
+		}, 20);
+
+	};
+	ViewChart.prototype.createChart = function() {
+		var viewChart = this;
+		return new Chart(
+			viewChart.$iframe.contents().find("#chart")[0].getContext('2d'),
+			{
+				type: 'scatter',
+				data: {
+					datasets: viewChart.datasets = viewChart.datasetInfos.map(function(datasetInfo) {
+						var image = new Image();
+						var xml = '<?xml version="1.0" encoding="utf-8"?>\n'
+							+ '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="120" height="40" viewBox="0 0 40 40">\n'
+							+ '    <text x="50%" y="50%" text-anchor="middle" font-family="Verdana" dominant-baseline="central" font-size="20" fill="' + datasetInfo.color + '" style="text-align: center;">\n'
+							+ '        ' + datasetInfo.label + '\n'
+							+ '    </text>\n'
+							+ '</svg>\n';
+						image.src = "data:image/svg+xml," + encodeURIComponent(xml);
+
+						return {
+							borderColor: datasetInfo.color,
+							pointStyle: image,
+							pointRadius: 6,
+							fill: false,
+							data: []
+						};
+					}),
+				},
+				options: {
+					legend: {
+						display: false,
+					},
+					tooltips: {
+						enabled: false,
+					},
+					scales: {
+						xAxes: [ {
+							id: 'x',
+							type: 'time',
+							position: 'bottom',
+							maxRotation: 180,
+							minRotation: 90,
+							time: {
+								displayFormats: {
+									second: "HH:mm:ss"
+								},
+								unit: "second",
+								unitStepSize: 10,
+							},
+							ticks: {
+								min: parseTime("20000101-000000-000").valueOf(),
+								max: parseTime("20000101-000000-000").valueOf() + viewChart.visiblePeriod,
+								display: false,
+							},
+							gridLines: {
+								display: false,
+							},
+							afterFit: function(axis) {
+								if (viewChart.now != null) {
+									axis.max = viewChart.now;
+									axis.min = axis.max - viewChart.visiblePeriod;
+
+									// 非表示もしくは期限切れのプライマリマーカーを削除
+									viewChart.datasets.forEach(function(dataset) {
+										while (1 < dataset.data.length
+											&& (dataset.data[1].x.valueOf() < viewChart.now - viewChart.visiblePeriod
+												|| dataset.data[1].x.valueOf() < viewChart.now - viewChart.maxPeriod)) {
+											dataset.data.shift();
+										}
+									});
+
+									// 期限切れのバックマーカーを削除
+									viewChart.backDatasets.forEach(function(backDataset) {
+										while (1 < backDataset.length
+											&& backDataset[1].x.valueOf() < viewChart.now - viewChart.maxPeriod) {
+											backDataset.shift();
+										}
+									});
+								}
+							},
+						} ],
+						yAxes: [ {
+							ticks: {
+								min: viewChart.yMin,
+								max: viewChart.yMax,
+								stepSize: viewChart.yStepSize,
+								fontSize: 20,
+							},
+						} ],
+					},
+					elements: {
+						line: {
+							tension: 0, // ベジェ無効
+						},
+					},
+				},
+			});
+	};
+	ViewChart.prototype.setVisiblePeriod = function(visiblePeriod) {
+		this.visiblePeriod = visiblePeriod;
+
+		// 隠れていたマーカーが現れる
+		for (var i = 0; i < this.datasets.length; i++) {
+			var data = this.datasets[i].data;
+			var backDataset = this.backDatasets[i];
+			var D = data.length;
+			var B = backDataset.length;
+			//       01234567
+			// d D=4     ****
+			// b B=8 --******
+			// bの2から3までをdの先頭に復帰
+			// A = 最初の表示マーカーのindex
+			// A から B - D - 1 まで
+			var A = 0;
+			while (A < backDataset.length
+				&& backDataset[A].x.valueOf() < this.now - this.visiblePeriod) {
+				A++;
+			}
+
+			Array.prototype.unshift.apply(data, backDataset.slice(A, B - D));
+		}
+	};
+</script>
+<script>
+	function SolarPacketViewer(powerInfo, currentInfos, voltageInfos)
+	{
+		this.powerInfo = powerInfo;
+		this.currentInfos = currentInfos;
+		this.voltageInfos = voltageInfos;
+	}
+	SolarPacketViewer.prototype.powerInfo = null;
+	SolarPacketViewer.prototype.currentInfos = null;
+	SolarPacketViewer.prototype.voltageInfos = null;
+	SolarPacketViewer.prototype.dataTable = null;
+	SolarPacketViewer.prototype.viewPanelInfo = null;
+	SolarPacketViewer.prototype.viewPacketList = null;
+	SolarPacketViewer.prototype.viewChartP = null;
+	SolarPacketViewer.prototype.viewChartI = null;
+	SolarPacketViewer.prototype.viewChartV = null;
+	SolarPacketViewer.prototype.dawsio = null;
+	SolarPacketViewer.prototype.start = function() {
+		var solarPacketViewer = this;
+
+		// 普通の初期化
+		solarPacketViewer.dataTable = solarPacketViewer.voltageInfos.map(function(voltageInfo) {
+			return [null, null, null];
+		});
+		solarPacketViewer.viewPanelInfo = new ViewPanelInfo();
+		solarPacketViewer.viewPanelInfo.flashThreshold = 0.2;
+		solarPacketViewer.viewPacketList = new ViewPacketList();
+		solarPacketViewer.viewPacketList.capacity = 200;
+		solarPacketViewer.viewChartP = new ViewChart($("#chartP"), [
+			{
+				color: solarPacketViewer.powerInfo.color,
+				label: solarPacketViewer.powerInfo.marker,
+			},
+		], 400, 100);
+		solarPacketViewer.viewChartP.yMax = 2000;
+		solarPacketViewer.viewChartP.yStepSize = 500;
+		solarPacketViewer.viewChartP.maxPeriod = 5 * 60 * 60 * 1000;
+		solarPacketViewer.viewChartI = new ViewChart($("#chartI"), solarPacketViewer.currentInfos.map(function(currentInfo) {
+			return {
+				color: currentInfo.color,
+				label: currentInfo.marker,
+			};
+		}), 400, 100);
+		solarPacketViewer.viewChartI.yMax = 30;
+		solarPacketViewer.viewChartI.yStepSize = 5;
+		solarPacketViewer.viewChartI.maxPeriod = 5 * 60 * 60 * 1000;
+		solarPacketViewer.viewChartV = new ViewChart($("#chartV"), solarPacketViewer.voltageInfos.map(function(voltageInfo) {
+			return {
+				color: voltageInfo.color,
+				label: voltageInfo.marker,
+			};
+		}), 400, 100);
+		solarPacketViewer.viewChartV.yMax = 30;
+		solarPacketViewer.viewChartV.yStepSize = 5;
+		solarPacketViewer.viewChartV.maxPeriod = 5 * 60 * 60 * 1000;
+		solarPacketViewer.dawsio = new DynamicAnalyzeWebSocketIO();
+		solarPacketViewer.dawsio.onRecord = function(pplcpvPacket) {
+
+			// リストに追加
+			solarPacketViewer.viewPacketList.onRecord(pplcpvPacket);
+
+			// 正常パケットイベント
+			if (pplcpvPacket.bytes != null) {
+				if (pplcpvPacket.bytes.length == 5) {
+					var panelId = pplcpvPacket.bytes[0];
+					if (0 <= panelId && panelId < solarPacketViewer.voltageInfos.length) {
+
+						solarPacketViewer.onData("" + panelId, [
+							pplcpvPacket.bytes[1],
+							pplcpvPacket.bytes[2],
+							pplcpvPacket.bytes[4],
+						], pplcpvPacket.time);
+
+					}
+				}
+			}
+
+		};
+		solarPacketViewer.dawsio.onTextRecord = function(text) {
+
+			// リストに追加
+			solarPacketViewer.viewPacketList.onTextRecord(text);
+
+		};
+
+		// チャートの読み込み
+		solarPacketViewer.viewChartP.loadChart();
+		solarPacketViewer.viewChartI.loadChart();
+		solarPacketViewer.viewChartV.loadChart();
+
+		solarPacketViewer.dawsio.start();
+
+	};
+	SolarPacketViewer.prototype.onData = function(voltageName, data, time) {
+		var voltageIndex = this.getVoltageIndexByName(voltageName);
+		this.update(voltageIndex, data, time);
+	};
+	SolarPacketViewer.prototype.update = function(voltageIndex, data, time) {
+		var voltageInfo = this.voltageInfos[voltageIndex];
+		var currentIndex = voltageInfo.currentIndex;
+		var currentInfo = this.currentInfos[currentIndex];
+
+		// データを更新
+		this.dataTable[voltageIndex][0] = data[0]; // voltage
+		this.dataTable[voltageIndex][1] = data[1]; // temperature
+		this.dataTable[voltageIndex][2] = data[2]; // current
+
+		// 表を更新
+		this.viewPanelInfo.updateVoltage(voltageInfo.name, this.getVoltage(voltageIndex), "" + data);
+		this.viewPanelInfo.updateCurrent(currentInfo.name, this.getCurrent(currentIndex), "");
+
+		// グラフを更新
+		this.viewChartP.onData(0, this.getPower(), time);
+		this.viewChartI.onData(currentIndex, this.getCurrent(currentIndex), time);
+		this.viewChartV.onData(voltageIndex, this.getVoltage(voltageIndex), time);
+
+	};
+	SolarPacketViewer.prototype.getVoltageIndexByName = function(name) {
+		return this.voltageInfos
+			.map((info, index) => [info, index])
+			.filter((tuple) => tuple[0].name == name)[0][1];
+	};
+	SolarPacketViewer.prototype.getCurrentIndexByName = function(name) {
+		return this.currentInfos
+			.map((info, index) => [info, index])
+			.filter((tuple) => tuple[0].name == name)[0][1];
+	};
+	SolarPacketViewer.prototype.getPower = function() {
+		var a = this;
+		return getSum(a.currentInfos
+			.map((currentInfo, currentIndex) => getSum(a.getVoltageIndexesByCurrentIndex(currentIndex)
+				.map((voltageIndex) => a.getVoltage(voltageIndex))) * a.getCurrent(currentIndex)));
+	};
+	SolarPacketViewer.prototype.getCurrent = function(currentIndex) {
+		var a = this;
+		return getAverage(this.getVoltageIndexesByCurrentIndex(currentIndex)
+			.map((voltageIndex) => a.dataTable[voltageIndex][2]));
+	};
+	SolarPacketViewer.prototype.getVoltageIndexesByCurrentIndex = function(currentIndex) {
+		return this.voltageInfos
+			.map((voltageInfo, voltageIndex) => [voltageInfo, voltageIndex])
+			.filter((tuple) => tuple[0].currentIndex == currentIndex)
+			.map((tuple) => tuple[1]);
+	};
+	SolarPacketViewer.prototype.getVoltage = function(voltageIndex) {
+		return this.dataTable[voltageIndex][0];
+	};
+	SolarPacketViewer.prototype.setVisiblePeriod = function(visiblePeriod) {
+		this.viewChartP.setVisiblePeriod(visiblePeriod);
+		this.viewChartI.setVisiblePeriod(visiblePeriod);
+		this.viewChartV.setVisiblePeriod(visiblePeriod);
+	};
+</script>
+<script>
+	var solarPacketViewer;
+	$(function() {
+		var createVoltage = function(name, currentIndex) {
+			return {
+				name: name,
+				marker: name,
+				color: "#000",
+				currentIndex: currentIndex,
+			};
+		};
+		solarPacketViewer = new SolarPacketViewer({
+			marker: "○",
+			color: "#000",
+		}, [
+			{
+				name: "A",
+				marker: "A",
+				color: "#000",
+			},
+			{
+				name: "B",
+				marker: "B",
+				color: "#000",
+			},
+			{
+				name: "C",
+				marker: "C",
+				color: "#000",
+			},
+			{
+				name: "D",
+				marker: "D",
+				color: "#000",
+			},
+		], Array(48).fill(null).map((a, i) => {
+			return createVoltage("" + i, Math.floor(i / 12));
+		}));
+		solarPacketViewer.start();
+	});
+</script>
+</head>
+<body>
+	<style>
+		html, body {
+			height: 100%;
+			margin: 0;
+		}
+
+		table.layout {
+			height: 100%;
+			width: 100%;
+			box-sizing: border-box;
+		}
+
+		table.solid>*>*>td {
+			border: 1px inset #eee;
+			padding: 4px;
+		}
+	</style>
+	<table class="layout solid">
+		<tr style="height: 200px;">
+			<td style="width: 500px;">
+				<table class="layout">
+					<script>
+						function ViewPanelInfo()
+						{
+
+						}
+						ViewPanelInfo.prototype.flashThreshold = 0.2;
+						ViewPanelInfo.prototype.updateVoltage = function(voltageName, value, title) {
+							this.updateValue($("#view_voltage_" + voltageName), sprintf("%d", value), title);
+						};
+						ViewPanelInfo.prototype.updateCurrent = function(currentName, value, title) {
+							this.updateValue($("#view_current_" + currentName), sprintf("%.1f", value), title);
+						};
+						ViewPanelInfo.prototype.updateValue = function($td, value, title) {
+							var $span = $td.find(".value");
+							var prevValue = $span.text();
+							$span.text(value);
+							if (prevValue * 1 == 0) {
+
+							} else if (value >= prevValue * (1 + this.flashThreshold)) {
+								$td.stop();
+								$td.css("background-color", "#88ff88ff");
+								$td.animate({ 'backgroundColor': 'rgba(0, 0, 0, 0)' }, 2000);
+							} else if (value * (1 + this.flashThreshold) <= prevValue) {
+								$td.stop();
+								$td.css("background-color", "#ff8888ff");
+								$td.animate({ 'backgroundColor': 'rgba(0, 0, 0, 0)' }, 2000);
+							}
+							$td.attr("title", title);
+						};
+					</script>
+					<style>
+						.view_td_id {
+							text-align: center;
+							font-size: 150%;
+							font-weight: bold;
+							color: #080;
+						}
+
+						.view_td_value {
+							height: 1em;
+							text-align: center;
+							font-family: monospace;
+							font-size: 200%;
+							font-weight: bold;
+						}
+
+						.view_span {
+							display: inline-block;
+						}
+
+						.view_span_voltage {
+							color: #000;
+							min-width: 2em;
+						}
+
+						.view_span_temperature {
+							color: #000;
+							min-width: 3em;
+						}
+
+						.view_span_current {
+							color: #000;
+							min-width: 3.5em;
+						}
+					</style>
+					<col style="width: 1px;">
+					<col>
+					<col>
+					<col>
+					<col>
+					<tr style="height: 0%;">
+						<td></td>
+						<td class="view_td_id">#0</td>
+						<td class="view_td_id">#1</td>
+						<td class="view_td_id">#2</td>
+						<td class="view_td_id">#3</td>
+						<td class="view_td_id">#4</td>
+						<td class="view_td_id">#5</td>
+						<td class="view_td_id">#6</td>
+						<td class="view_td_id">#7</td>
+						<td class="view_td_id">#8</td>
+						<td class="view_td_id">#9</td>
+						<td class="view_td_id">#10</td>
+						<td class="view_td_id">#11</td>
+						<td class="view_td_id">I<sub>A</sub></td>
+					</tr>
+					<tr>
+						<td class="view_td_id"><nobr>STRING A</nobr></td>
+						<td class="view_td_value" id="view_voltage_0"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_1"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_2"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_3"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_4"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_5"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_6"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_7"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_8"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_9"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_10"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_11"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_current_A"><span class="view_span view_span_current"><span class="value">-</span>mA</span></td>
+					</tr>
+					<tr style="height: 0%;">
+						<td></td>
+						<td class="view_td_id">#12</td>
+						<td class="view_td_id">#13</td>
+						<td class="view_td_id">#14</td>
+						<td class="view_td_id">#15</td>
+						<td class="view_td_id">#16</td>
+						<td class="view_td_id">#17</td>
+						<td class="view_td_id">#18</td>
+						<td class="view_td_id">#19</td>
+						<td class="view_td_id">#20</td>
+						<td class="view_td_id">#21</td>
+						<td class="view_td_id">#22</td>
+						<td class="view_td_id">#23</td>
+						<td class="view_td_id">I<sub>B</sub></td>
+					</tr>
+					<tr>
+						<td class="view_td_id"><nobr>STRING B</nobr></td>
+						<td class="view_td_value" id="view_voltage_12"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_13"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_14"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_15"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_16"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_17"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_18"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_19"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_20"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_21"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_22"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_23"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_current_B"><span class="view_span view_span_current"><span class="value">-</span>mA</span></td>
+					</tr>
+					<tr style="height: 0%;">
+						<td></td>
+						<td class="view_td_id">#24</td>
+						<td class="view_td_id">#25</td>
+						<td class="view_td_id">#26</td>
+						<td class="view_td_id">#27</td>
+						<td class="view_td_id">#28</td>
+						<td class="view_td_id">#29</td>
+						<td class="view_td_id">#30</td>
+						<td class="view_td_id">#31</td>
+						<td class="view_td_id">#32</td>
+						<td class="view_td_id">#33</td>
+						<td class="view_td_id">#34</td>
+						<td class="view_td_id">#35</td>
+						<td class="view_td_id">I<sub>C</sub></td>
+					</tr>
+					<tr>
+						<td class="view_td_id"><nobr>STRING C</nobr></td>
+						<td class="view_td_value" id="view_voltage_24"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_25"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_26"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_27"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_28"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_29"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_30"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_31"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_32"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_33"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_34"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_35"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_current_C"><span class="view_span view_span_current"><span class="value">-</span>mA</span></td>
+					</tr>
+					<tr style="height: 0%;">
+						<td></td>
+						<td class="view_td_id">#36</td>
+						<td class="view_td_id">#37</td>
+						<td class="view_td_id">#38</td>
+						<td class="view_td_id">#39</td>
+						<td class="view_td_id">#40</td>
+						<td class="view_td_id">#41</td>
+						<td class="view_td_id">#42</td>
+						<td class="view_td_id">#43</td>
+						<td class="view_td_id">#44</td>
+						<td class="view_td_id">#45</td>
+						<td class="view_td_id">#46</td>
+						<td class="view_td_id">#47</td>
+						<td class="view_td_id">I<sub>D</sub></td>
+					</tr>
+					<tr>
+						<td class="view_td_id"><nobr>STRING D</nobr></td>
+						<td class="view_td_value" id="view_voltage_36"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_37"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_38"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_39"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_40"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_41"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_42"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_43"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_44"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_45"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_46"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_voltage_47"><span class="view_span view_span_voltage"><span class="value">-</span>V</span></td>
+						<td class="view_td_value" id="view_current_D"><span class="view_span view_span_current"><span class="value">-</span>mA</span></td>
+					</tr>
+				</table>
+			</td>
+			<td rowspan="2">
+				<table class="layout">
+					<style>
+						.chart_td_label {
+							text-align: center;
+							font-size: 200%;
+							font-weight: bold;
+							color: #080;
+						}
+					</style>
+					<col style="width: 1px;">
+					<col>
+					<tr>
+						<td class="chart_td_label" style="padding: 0 0.5em;">P<br><span style="font-size: 80%;">[mW]</span></td>
+						<td><iframe id="chartP" style="height: 100%; width: 100%;" frameborder="no"></iframe></td>
+					</tr>
+					<tr>
+						<td class="chart_td_label" style="padding: 0 0.5em;">I<br><span style="font-size: 80%;">[mA]</span></td>
+						<td><iframe id="chartI" style="height: 100%; width: 100%;" frameborder="no"></iframe></td>
+					</tr>
+					<tr>
+						<td class="chart_td_label" style="padding: 0 0.5em;">V<br><span style="font-size: 80%;">[V]</span></td>
+						<td><iframe id="chartV" style="height: 100%; width: 100%;" frameborder="no"></iframe></td>
+					</tr>
+					<tr style="height: 0%;">
+						<td style="text-align: center;" colspan="2">
+							<label><input type="radio" name="visiblePeriod" onclick="solarPacketViewer.setVisiblePeriod(5 * 60 * 60 * 1000);">5h</label>
+							<label><input type="radio" name="visiblePeriod" onclick="solarPacketViewer.setVisiblePeriod(60 * 60 * 1000);">1h</label>
+							<label><input type="radio" name="visiblePeriod" onclick="solarPacketViewer.setVisiblePeriod(10 * 60 * 1000);">10m</label>
+							<label><input type="radio" name="visiblePeriod" onclick="solarPacketViewer.setVisiblePeriod(5 * 60 * 1000);">5m</label>
+							<label><input type="radio" name="visiblePeriod" onclick="solarPacketViewer.setVisiblePeriod(2 * 60 * 1000);">2m</label>
+							<label><input type="radio" name="visiblePeriod" onclick="solarPacketViewer.setVisiblePeriod(60 * 1000);" checked="checked">1m</label>
+							<label><input type="radio" name="visiblePeriod" onclick="solarPacketViewer.setVisiblePeriod(30 * 1000);">30s </label>
+							<label><input type="radio" name="visiblePeriod" onclick="solarPacketViewer.setVisiblePeriod(10 * 1000);">10s</label>
+							<label><input type="radio" name="visiblePeriod" onclick="solarPacketViewer.setVisiblePeriod(5 * 1000);">5s</label>
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+		<tr style="height: 100%;">
+			<td>
+				<table class="layout">
+					<tr style="height: 100%;">
+						<script>
+							function ViewPacketList()
+							{
+
+							}
+							ViewPacketList.prototype.capacity = 1000;
+							ViewPacketList.prototype.onRecord = function(pplcpvPacket) {
+								if (pplcpvPacket.binary.length >= $("#min_length").val()) {
+									this.addRecord(this.createRecord(pplcpvPacket));
+								}
+							};
+							ViewPacketList.prototype.createRecord = function(pplcpvPacket) {
+								var $record = $("<tr>");
+								var $field;
+
+								$field = $("<td>");
+								$field.addClass("cell_id");
+								$field.text(pplcpvPacket.id);
+								$record.append($field);
+
+								$field = $("<td>");
+								$field.addClass("cell_time");
+								$field.text(pplcpvPacket.time);
+								$field.attr("title", pplcpvPacket.time_int);
+								$record.append($field);
+
+								$field = $('<td style="white-space: pre;">');
+								$field.addClass("cell_bytes");
+								if (pplcpvPacket.bytes != null) {
+									$field.text(pplcpvPacket.bytes.map((byte) => sprintf("%3d", byte)).join(","));
+								}
+								$record.append($field);
+
+								$field = $("<td>");
+								$field.addClass("cell_binary");
+								$field.text(pplcpvPacket.binary);
+								$record.append($field);
+
+								return $record;
+							};
+							ViewPacketList.prototype.onTextRecord = function(text) {
+								this.addRecord(this.createTextRecord(text));
+							};
+							ViewPacketList.prototype.createTextRecord = function(text) {
+								var $record = $("<tr>");
+								var $field;
+
+								$field = $("<td>");
+								$record.append($field);
+
+								$field = $("<td>");
+								$field.addClass("cell_text");
+								$field.attr("colspan", "3");
+								$field.text(text);
+								$record.append($field);
+
+								return $record;
+							};
+							ViewPacketList.prototype.addRecord = function($record) {
+								var viewPacketList = this;
+								viewPacketList.attachPacketList(() => {
+									var $data = $("#packet_list").contents().find("#data");
+
+									// 追加
+									$data.append($record);
+
+									// 削除
+									var $children = $data.children();
+									var overflow = $children.length - viewPacketList.capacity;
+									if (overflow > 0) {
+										for (var i = 0; i < overflow; i++) {
+											$children[i].remove();
+										}
+									}
+
+								});
+							};
+							ViewPacketList.prototype.attachPacketList = function(code) {
+								var scrollable = $("#auto_scroll").is(':checked') && this.shouldScrollDown();
+								code();
+								if (scrollable) this.scrollDown();
+							};
+							ViewPacketList.prototype.shouldScrollDown = function() {
+								var $scroll = $("#packet_list").contents().find("#scroll");
+								return $scroll[0].scrollTop >= $scroll[0].scrollHeight - $scroll[0].clientHeight - 20;
+							};
+							ViewPacketList.prototype.scrollDown = function() {
+								var $scroll = $("#packet_list").contents().find("#scroll");
+								$scroll[0].scrollTop = $scroll[0].scrollHeight - $scroll[0].clientHeight;
+							};
+						</script>
+						<td><iframe id="packet_list" style="height: 100%; width: 100%;" src="packet_list.html" frameborder="no"></iframe></td>
+					</tr>
+					<tr style="height: 0%;">
+						<td>
+							MinLength: <input type="text" id="min_length" style="width: 3ex;" value="20">
+							<label><input type="checkbox" id="auto_scroll" checked="checked">AutoScroll</label>
+							<input type="button" onclick="solarPacketViewer.viewPacketList.scrollDown()" value="↓">
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+	</table>
+</body>
+</html>
