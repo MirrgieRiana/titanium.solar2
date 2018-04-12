@@ -128,7 +128,7 @@ public class PacketListenerWeb implements IItemListener<Packet>
 		if (firstTime == null) firstTime = time.toInstant(ZoneOffset.UTC).toEpochMilli();
 		int timeInt = (int) (time.toInstant(ZoneOffset.UTC).toEpochMilli() - firstTime);
 
-		for (WebSocket connection : webSocketServer.connections()) {
+		for (WebSocket connection : webSocketServer.getConnections()) {
 			try {
 				connection.send(toString(id, binary, time, timeInt, bytes));
 			} catch (Exception e) {
